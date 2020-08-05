@@ -1,9 +1,9 @@
 # Basilicom Extended Path Formatter Bundle for Pimcore
 
-###How it works
+### How it works
 This plugin provides a custom Pimcore path formatter as well as a simple, yaml-file-based configuration for the printed path for multi-relation-fields.  
 
-###Usage
+### Usage
 Add ``@Basilicom\PathFormatterBundle\DependencyInjection\BasilicomPathFormatter`` to the Formatter-Field in the relation-fieldType.  
 **Note:** The ``@`` is important, as the formatter is registered as a service, including dependency injection.
 
@@ -12,7 +12,7 @@ If no getter exists for the property, the pattern-part will stay untouched.
 
 As soon as a class property is a ``Pimcore\ModelAsset\Image`` it will be visible as small preview in the relation-list.
 
-####Example
+#### Example
 app/config/config.yml
 ```
 basilicom_path_formatter:
