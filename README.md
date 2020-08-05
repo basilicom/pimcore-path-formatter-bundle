@@ -16,34 +16,45 @@ As soon as a class property is a ``Pimcore\ModelAsset\Image`` it will be visible
 app/config/config.yml
 ```
 basilicom_path_formatter:
-  pattern: "{logo} {identifier}"
+  pattern: "{name} {price}{unit}"
 ```
 
-var/classes/DataObject/Client.php
+var/classes/DataObject/Product.php
 ```
-class Client extends Concrete
+class Product extends Concrete
 {
     protected $o_classId = "1";
-    protected $o_className = "Client";
-    protected $identifier;
-    protected $logo;
+    protected $o_className = "Product";
+    protected $name;
+    protected $price;
+    protected $unit;
     
     /**
-     * Get identifier
+     * Get name
      *
      * @return string
      */
-    public function getIdentifier()
+    public function getName()
     {
         // ...
     }
     
     /**
-     * Get logo
+     * Get price
      *
-     * @return \Pimcore\Model\Asset\Image
+     * @return float
      */
-    public function getLogo()
+    public function getPrice()
+    {
+        // ...
+    }
+    
+    /**
+     * Get unit
+     *
+     * @return string
+     */
+    public function getUnit()
     {
         // ...
     }
@@ -56,7 +67,7 @@ class Client extends Concrete
   basilicom_path_formatter:
     pattern: 
         Pimcore\Model\DataObject\Client: "{logo} {identifier}"
-        Pimcore\Model\DataObject\Product: "{price}{unit}"
+        Pimcore\Model\DataObject\Product: "{name} {price}{unit}"
   ```
 - add button to relation-fields to prefill the formatter class
 - implement helper methods for simple string modifications
