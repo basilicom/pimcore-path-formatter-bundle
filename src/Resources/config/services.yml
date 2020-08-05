@@ -1,0 +1,10 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  Basilicom\PathFormatterBundle\DependencyInjection\PimcoreAdapter:
+
+  Basilicom\PathFormatterBundle\DependencyInjection\BasilicomPathFormatter:
+    public: true
