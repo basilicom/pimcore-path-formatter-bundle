@@ -9,19 +9,24 @@ This plugin provides a custom Pimcore path formatter as well as a simple, yaml-f
 Add ``@Basilicom\PathFormatterBundle\DependencyInjection\BasilicomPathFormatter`` to the Formatter-Field in the relation-fieldType.  
 **Note:** The ``@`` is important, as the formatter is registered as a service, including dependency injection.
 
-Configure the pathformatter in your ``config.yml`` by using the first-level class-property-names in camelcase and between ``{`` and ``}``. The key between the braces will be used to call data object getters.  
-If no getter exists for the property, the pattern-part will stay untouched.
-
-As soon as a class property is a ``Pimcore\ModelAsset\Image`` it will be visible as small preview in the relation-list.
-
-#### Example
-app/config/config.yml
+Add the following config to your ``app/config/config.yml``
 ```
 basilicom_path_formatter:
   pattern: "{name} {price}{unit}"
 ```
 
-var/classes/DataObject/Product.php
+Configure the the pattern by using the first-level class-property-names in camelcase and between ``{`` and ``}``. The key between the braces will be used to call data object getters.
+This means, you also can use basic DataObject methods like: 
+- ``fullPath`` for ``\Pimcore\Model\DataObject\AbstractObject::getFullPath())`` 
+- ``className`` for ``\Pimcore\Model\DataObject\AbstractObject::getClassName())``
+- ...
+
+If no getter exists for the property, the placeholder will stay visible.
+
+**Extra:** As soon the value of a class property is a ``Pimcore\ModelAsset\Image`` it will be rendered as small preview in the relation-list.
+
+#### Example
+Product class ``var/classes/DataObject/Product.php``
 ```
 class Product extends Concrete
 {
@@ -38,7 +43,7 @@ class Product extends Concrete
      */
     public function getName()
     {
-        // ...
+        // Sneakers 
     }
     
     /**
@@ -48,7 +53,7 @@ class Product extends Concrete
      */
     public function getPrice()
     {
-        // ...
+        // 39.99
     }
     
     /**
@@ -58,10 +63,19 @@ class Product extends Concrete
      */
     public function getUnit()
     {
-        // ...
+        // EUR
     }
 }
 ```
+
+Wanted display-name in the relations list: ``Sneakers 39EUR``
+
+Necessary config in ``app/config/config.yml``
+```
+basilicom_path_formatter:
+  pattern: "{name} {price}{unit}"
+```
+
 
 ### Todos
 - allow different patterns for different classes like e.g.:
