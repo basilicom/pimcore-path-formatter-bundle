@@ -40,7 +40,7 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "Basilicom\\PathFormatterBundle\\Fixtures\\": "tests/fixtures"
+      "Pimcore\\Model\\DataObject\\": "tests/fixtures"
     }
   },
   "extra": {

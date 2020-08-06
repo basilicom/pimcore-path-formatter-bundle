@@ -1,16 +1,25 @@
 <?php
 
-namespace Basilicom\PathFormatterBundle\Fixtures;
+namespace Pimcore\Model\DataObject;
 
 use Pimcore\Model\Asset;
-use Pimcore\Model\DataObject\Concrete;
 
-class ProductMock extends Concrete
+class Product extends Concrete
 {
     private $image;
 
     protected $o_path = '/dataObjects/';
     protected $o_key = 'product';
+
+    public function getName(): string
+    {
+        return 'Sneakers';
+    }
+
+    public function getCountryIso(): string
+    {
+        return 'de';
+    }
 
     public function getPrice(): int
     {

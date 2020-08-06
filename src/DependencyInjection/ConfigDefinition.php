@@ -27,7 +27,27 @@ class ConfigDefinition implements ConfigurationInterface
                 ->booleanNode(self::ENABLE_ASSET_PREVIEW)->defaultTrue()->end()
                 ->arrayNode(self::PATTERN_LIST)
                     ->useAttributeAsKey('patternClass')
-                    ->scalarPrototype()->end()
+                    ->arrayPrototype()
+                        ->validate()
+                            ->always(function ($v) {
+                                if (empty($v['patternOverwrites'])) {
+                                    unset($v['patternOverwrites']);
+                                }
+
+                                return $v;
+                            })
+                        ->end()
+                        ->beforeNormalization()
+                            ->ifString()->then(function ($value) { return ['pattern' => $value]; })
+                        ->end()
+                        ->children()
+                            ->scalarNode('pattern')->end()
+                            ->arrayNode('patternOverwrites')
+                                ->useAttributeAsKey('patternClass')
+                                ->scalarPrototype()->end()
+                            ->end()
+                        ->end()
+                    ->end()
                 ->end()
             ->end();
 
