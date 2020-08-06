@@ -3,19 +3,21 @@
 namespace Basilicom\PathFormatterBundle\DependencyInjection;
 
 use Pimcore\Model\Asset;
+use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Element\ElementInterface;
 use Pimcore\Model\DataObject\ClassDefinition\PathFormatterInterface;
+use Basilicom\PathFormatterBundle\DependencyInjection\PathFormatter\Configuration;
 
 class BasilicomPathFormatter implements PathFormatterInterface
 {
-    private $pattern;
-
     private $pimcoreAdapter;
 
-    public function __construct(PimcoreAdapter $pimcoreAdapter, string $pattern = '')
+    private $configuration;
+
+    public function __construct(PimcoreAdapter $pimcoreAdapter, Configuration $configuration)
     {
         $this->pimcoreAdapter = $pimcoreAdapter;
-        $this->pattern = $pattern;
+        $this->configuration = $configuration;
     }
 
     /**
@@ -30,10 +32,18 @@ class BasilicomPathFormatter implements PathFormatterInterface
      */
     public function formatPath(array $result, ElementInterface $source, array $targets, array $params): array
     {
-        if (!empty($this->pattern)) {
+        $patternList = $this->configuration->getPatternList();
+        if (!empty($patternList)) {
             foreach ($targets as $key => $item) {
                 if ($item['type'] === 'object') {
-                    $result[$key] = $this->formatDataObjectPath($item);
+                    $targetObject = $this->pimcoreAdapter->getConcreteById($item['id']);
+
+                    foreach ($patternList as $className => $pattern) {
+                        if ($targetObject instanceof $className) {
+                            $result[$key] = $this->formatDataObjectPath($targetObject, $pattern);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -41,18 +51,17 @@ class BasilicomPathFormatter implements PathFormatterInterface
         return $result;
     }
 
-    private function formatDataObjectPath(array $item): string
+    private function formatDataObjectPath(Concrete $targetObject, string $pattern): string
     {
-        $targetObject = $this->pimcoreAdapter->getConcreteById($item['id']);
-        $propertyList = $this->getPropertyListFromPattern();
+        $propertyList = $this->getPropertyListFromPattern($pattern);
 
-        $formattedPath = $this->pattern;
+        $formattedPath = $pattern;
         foreach ($propertyList as $property) {
             $propertyGetter = 'get' . ucfirst(trim($property));
             if (method_exists($targetObject, $propertyGetter)) {
                 $propertyValue = call_user_func([$targetObject, $propertyGetter]);
                 if ($propertyValue instanceof Asset\Image) {
-                    $replacement = '<img src="' . $propertyValue->getFullPath() . '" style="height: 18px; margin-right: 5px;" />';
+                    $replacement = $this->getFormattedAssetValue($propertyValue);
                 } else {
                     $replacement = $propertyValue;
                 }
@@ -64,14 +73,20 @@ class BasilicomPathFormatter implements PathFormatterInterface
         return $formattedPath;
     }
 
-    /**
-     * @return array
-     */
-    private function getPropertyListFromPattern(): array
+    private function getPropertyListFromPattern(string $pattern): array
     {
         $matches = [];
-        preg_match_all('~{(.*?)}~', $this->pattern, $matches);
+        preg_match_all('~{(.*?)}~', $pattern, $matches);
 
         return !empty($matches) ? $matches[1] : [];
+    }
+
+    private function getFormattedAssetValue(Asset\Image $propertyValue): string
+    {
+        $imagePath = $propertyValue->getFullPath();
+
+        return $this->configuration->isAssetPreviewEnabled()
+            ? '<img src="' . $imagePath . '" style="height: 18px; margin-right: 5px;" />'
+            : $imagePath;
     }
 }

@@ -1,9 +1,7 @@
 # Basilicom Extended Path Formatter Bundle for Pimcore
 
-WORK IN PROGRESS!!
-
 ### How it works
-This plugin provides a custom Pimcore path formatter as well as a simple, yaml-file-based configuration for the printed path for multi-relation-fields.  
+This plugin provides a custom Pimcore-Backend path formatter as well as a simple, yaml-file-based configuration for the shown path of dataObjects in multi-relation-fields.  
 
 ### Usage
 Add ``@Basilicom\PathFormatterBundle\DependencyInjection\BasilicomPathFormatter`` to the Formatter-Field in the relation-fieldType.  
@@ -12,18 +10,30 @@ Add ``@Basilicom\PathFormatterBundle\DependencyInjection\BasilicomPathFormatter`
 Add the following config to your ``app/config/config.yml``
 ```
 basilicom_path_formatter:
-  pattern: "{name} {price}{unit}"
+  pattern: 
 ```
 
-Configure the the pattern by using the first-level class-property-names in camelcase and between ``{`` and ``}``. The key between the braces will be used to call data object getters.
-This means, you also can use basic DataObject methods like: 
+Add the full qualified class-name, that should be formatted, as key to the pattern list and define the pattern as value.
+Configure the pattern placing class-property-names, accessible by public getter methods, between curly brackets.  
+You also can reference basic dataObject methods like: 
 - ``fullPath`` for ``\Pimcore\Model\DataObject\AbstractObject::getFullPath())`` 
 - ``className`` for ``\Pimcore\Model\DataObject\AbstractObject::getClassName())``
 - ...
 
-If no getter exists for the property, the placeholder will stay visible.
+```
+basilicom_path_formatter:
+  pattern: 
+    Pimcore\Model\DataObject\Product: "{fullPath} - {price}{unit}"
+    
+    # the class should have a getPrice() and getUnit() method
+    # getFullPath() is a basic method from the Pimcore Concrete 
+```
 
-**Extra:** As soon the value of a class property is a ``Pimcore\ModelAsset\Image`` it will be rendered as small preview in the relation-list.
+If no getter exists for the property, the placeholder will stay untouched.
+
+### Showing images
+
+As soon the value of a class property is a ``Pimcore\ModelAsset\Image`` it will be rendered as small preview in the relation-list.
 
 #### Example
 Product class ``var/classes/DataObject/Product.php``
@@ -73,18 +83,11 @@ Wanted display-name in the relations list: ``Sneakers 39EUR``
 Necessary config in ``app/config/config.yml``
 ```
 basilicom_path_formatter:
-  pattern: "{name} {price}{unit}"
+  pattern: 
+    Pimcore\Model\DataObject\Product: "{name} {price}{unit}"    # specific dataObject pattern (overwrites generic one)
+    Pimcore\Model\DataObject\Concrete: "{fullPath}"             # generic pattern
 ```
 
-
 ### Todos
-- allow different patterns for different classes like e.g.:
-  ```
-  basilicom_path_formatter:
-    pattern: 
-        Pimcore\Model\DataObject\Client: "{logo} {identifier}"
-        Pimcore\Model\DataObject\Product: "{name} {price}{unit}"
-  ```
 - add button to relation-fields to prefill the formatter class
 - implement helper methods for simple string modifications
-- allow output of nested properties like ``{productImage.fullPath}``

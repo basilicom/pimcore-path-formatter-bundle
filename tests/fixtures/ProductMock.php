@@ -7,10 +7,10 @@ use Pimcore\Model\DataObject\Concrete;
 
 class ProductMock extends Concrete
 {
-    const PATH = '/images/';
-    const FILENAME = 'some-file.png';
-
     private $image;
+
+    protected $o_path = '/dataObjects/';
+    protected $o_key = 'product';
 
     public function getPrice(): int
     {

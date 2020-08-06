@@ -2,6 +2,7 @@
 
 namespace Basilicom\PathFormatterBundle\DependencyInjection;
 
+use Basilicom\PathFormatterBundle\DependencyInjection\PathFormatter\Configuration;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\HttpKernel\DependencyInjection\Extension;
@@ -14,12 +15,17 @@ class BasilicomPathFormatterExtension extends Extension
      */
     public function load(array $configs, ContainerBuilder $container)
     {
-        $configuration = new Configuration();
+        $configuration = new ConfigDefinition();
         $config = $this->processConfiguration($configuration, $configs);
 
-        $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
+        $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yml');
 
-        $container->getDefinition(BasilicomPathFormatter::class)->setArgument(1, $config['pattern']);
+        $pathFormatterConfig = new Configuration(
+            (bool) $config[ConfigDefinition::ENABLE_ASSET_PREVIEW],
+            (array) $config[ConfigDefinition::PATTERN_LIST]
+        );
+
+        $container->getDefinition(BasilicomPathFormatter::class)->setArgument(1, $pathFormatterConfig);
     }
 }

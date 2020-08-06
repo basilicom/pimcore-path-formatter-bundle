@@ -10,8 +10,11 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  *
  * To learn more see {@link http://symfony.com/doc/current/cookbook/bundles/configuration.html}
  */
-class Configuration implements ConfigurationInterface
+class ConfigDefinition implements ConfigurationInterface
 {
+    const ENABLE_ASSET_PREVIEW = 'enable_asset_preview';
+    const PATTERN_LIST = 'pattern';
+
     /**
      * {@inheritdoc}
      */
@@ -21,7 +24,8 @@ class Configuration implements ConfigurationInterface
         $treeBuilder
             ->getRootNode()
             ->children()
-                ->scalarNode('pattern')->end()
+                ->booleanNode(self::ENABLE_ASSET_PREVIEW)->defaultTrue()->end()
+                ->arrayNode(self::PATTERN_LIST)->end()
             ->end();
 
         return $treeBuilder;
