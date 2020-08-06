@@ -87,11 +87,11 @@ class BasilicomPathFormatter implements PathFormatterInterface
         ) {
             foreach ($patternOverwrites as $className => $pattern) {
                 if (class_exists($className) && $targetObject instanceof $className) {
+                    $formattedPath = $this->getFormattedPath($className, $pattern, $targetObject);
                     break;
                 }
             }
 
-            $formattedPath = $this->getFormattedPath($className, $pattern, $targetObject);
         }
 
         return $formattedPath;
