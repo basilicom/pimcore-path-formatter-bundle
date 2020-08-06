@@ -1,7 +1,5 @@
 # Basilicom Extended Path Formatter Bundle for Pimcore
 
-WORK IN PROGRESS!!
-
 ### How it works
 This plugin provides a custom Pimcore path formatter as well as a simple, yaml-file-based configuration for the printed path for multi-relation-fields.  
 
