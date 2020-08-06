@@ -1,11 +1,10 @@
 <?php
 
-namespace Basilicom\PathFormatterBundle\Fixtures;
+namespace Pimcore\Model\DataObject;
 
 use Pimcore\Model\Asset;
-use Pimcore\Model\DataObject\Concrete;
 
-class ProductMock extends Concrete
+class Product extends Concrete
 {
     private $image;
 
@@ -17,7 +16,7 @@ class ProductMock extends Concrete
         return 'Sneakers';
     }
 
-    public function getCountyIso(): string
+    public function getCountryIso(): string
     {
         return 'de';
     }

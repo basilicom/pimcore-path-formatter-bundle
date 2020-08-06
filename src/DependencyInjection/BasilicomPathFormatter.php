@@ -13,13 +13,13 @@ class BasilicomPathFormatter implements PathFormatterInterface
 
     private $enableAssetPreview;
 
-    private $patternList;
+    private $patternConfiguration;
 
-    public function __construct(PimcoreAdapter $pimcoreAdapter, bool $enableAssetPreview, array $patternList)
+    public function __construct(PimcoreAdapter $pimcoreAdapter, bool $enableAssetPreview, array $patternConfiguration)
     {
         $this->pimcoreAdapter = $pimcoreAdapter;
         $this->enableAssetPreview = $enableAssetPreview;
-        $this->patternList = $patternList;
+        $this->patternConfiguration = $patternConfiguration;
     }
 
     /**
@@ -34,14 +34,30 @@ class BasilicomPathFormatter implements PathFormatterInterface
      */
     public function formatPath(array $result, ElementInterface $source, array $targets, array $params): array
     {
-        if (!empty($this->patternList)) {
+        if (!empty($this->patternConfiguration)) {
             foreach ($targets as $key => $item) {
                 if ($item['type'] === 'object') {
                     $targetObject = $this->pimcoreAdapter->getConcreteById($item['id']);
 
-                    foreach ($this->patternList as $className => $pattern) {
-                        if (class_exists($className) && $targetObject instanceof $className) {
-                            $result[$key] = $this->formatDataObjectPath($targetObject, $pattern);
+                    foreach (array_reverse($this->patternConfiguration) as $patternKey => $patternConfig) {
+                        if (strrpos($patternKey, '::') !== false) {
+                            $formattedPath = $this->getFormattedPathWithContext(
+                                $patternKey,
+                                $patternConfig['patternOverwrites'],
+                                $params['context'],
+                                $source,
+                                $targetObject
+                            );
+                        } else {
+                            $formattedPath = $this->getFormattedPath(
+                                $patternKey,
+                                $patternConfig['pattern'],
+                                $targetObject
+                            );
+                        }
+
+                        if (!empty($formattedPath)) {
+                            $result[$key] = $formattedPath;
                             break;
                         }
                     }
@@ -52,8 +68,42 @@ class BasilicomPathFormatter implements PathFormatterInterface
         return $result;
     }
 
-    private function formatDataObjectPath(Concrete $targetObject, string $pattern): string
+    private function getFormattedPathWithContext(
+        string $patternKey,
+        array $patternOverwrites,
+        array $context,
+        ElementInterface $source,
+        ?Concrete $targetObject
+    ): string {
+        $formattedPath = '';
+
+        $contextClassName = substr($patternKey, 0, strpos($patternKey, '::'));
+        $contextFieldName = substr($patternKey, strpos($patternKey, '::') + 2);
+
+        $pattern = '';
+        if (class_exists($contextClassName)
+            && $source instanceof $contextClassName
+            && $context['fieldname'] === $contextFieldName
+        ) {
+            foreach ($patternOverwrites as $className => $pattern) {
+                if (class_exists($className) && $targetObject instanceof $className) {
+                    break;
+                }
+            }
+
+            $formattedPath = $this->getFormattedPath($className, $pattern, $targetObject);
+        }
+
+        return $formattedPath;
+    }
+
+
+    private function getFormattedPath(string $className, string $pattern, ?Concrete $targetObject): string
     {
+        if (empty($pattern) || !class_exists($className) || !($targetObject instanceof $className)) {
+            return '';
+        }
+
         $propertyList = $this->getPropertyListFromPattern($pattern);
 
         $formattedPath = $pattern;
@@ -62,7 +112,10 @@ class BasilicomPathFormatter implements PathFormatterInterface
             if (method_exists($targetObject, $propertyGetter)) {
                 $propertyValue = call_user_func([$targetObject, $propertyGetter]);
                 if ($propertyValue instanceof Asset\Image) {
-                    $replacement = $this->getFormattedAssetValue($propertyValue);
+                    $imagePath = $propertyValue->getFullPath();
+                    $replacement = $this->enableAssetPreview
+                        ? '<img src="' . $imagePath . '" style="height: 18px; margin-right: 5px;" />'
+                        : $imagePath;
                 } else {
                     $replacement = $propertyValue;
                 }
@@ -82,12 +135,4 @@ class BasilicomPathFormatter implements PathFormatterInterface
         return !empty($matches) ? $matches[1] : [];
     }
 
-    private function getFormattedAssetValue(Asset\Image $propertyValue): string
-    {
-        $imagePath = $propertyValue->getFullPath();
-
-        return $this->enableAssetPreview
-            ? '<img src="' . $imagePath . '" style="height: 18px; margin-right: 5px;" />'
-            : $imagePath;
-    }
 }

@@ -41,8 +41,8 @@ class BasilicomPathFormatterExtensionTest extends TestCase
                     ],
                     'Pimcore\Model\DataObject\ProductList::countryRelations' => [
                         'patternOverwrites' => [
-                            'Pimcore\Model\DataObject\BasicProduct' => '[{countyIso}] Basic - {name}',
-                            'Pimcore\Model\DataObject\PremiumProduct' => '[{countyIso}] Premium - {name}',
+                            'Pimcore\Model\DataObject\BasicProduct' => '[{countryIso}] Basic - {name}',
+                            'Pimcore\Model\DataObject\PremiumProduct' => '[{countryIso}] Premium - {name}',
                         ],
                     ],
                 ]
