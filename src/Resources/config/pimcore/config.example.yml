@@ -1,11 +1,12 @@
 basilicom_path_formatter:
   enable_asset_preview: true
   pattern:
-    # this is a global configuration for the display of basic/premium product information
+    # this is a global configuration for the pattern of the specific dataObject in a relation field
     Pimcore\Model\DataObject\BasicProduct: "Basic - {name}"
     Pimcore\Model\DataObject\PremiumProduct: "Premium - {name}"
-
     Pimcore\Model\DataObject\ProductList: "Product-list with {count} products"
+
+    # this will overwrite the global pattern by wrapping it with a context
     Pimcore\Model\DataObject\ProductList::countryRelations:
       patternOverwrites:
         Pimcore\Model\DataObject\BasicProduct: "[{countryIso}] Basic - {name}"
