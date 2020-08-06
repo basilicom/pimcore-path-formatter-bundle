@@ -6,18 +6,20 @@ use Pimcore\Model\Asset;
 use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Element\ElementInterface;
 use Pimcore\Model\DataObject\ClassDefinition\PathFormatterInterface;
-use Basilicom\PathFormatterBundle\DependencyInjection\PathFormatter\Configuration;
 
 class BasilicomPathFormatter implements PathFormatterInterface
 {
     private $pimcoreAdapter;
 
-    private $configuration;
+    private $enableAssetPreview;
 
-    public function __construct(PimcoreAdapter $pimcoreAdapter, Configuration $configuration)
+    private $patternList;
+
+    public function __construct(PimcoreAdapter $pimcoreAdapter, bool $enableAssetPreview, array $patternList)
     {
         $this->pimcoreAdapter = $pimcoreAdapter;
-        $this->configuration = $configuration;
+        $this->enableAssetPreview = $enableAssetPreview;
+        $this->patternList = $patternList;
     }
 
     /**
@@ -32,13 +34,12 @@ class BasilicomPathFormatter implements PathFormatterInterface
      */
     public function formatPath(array $result, ElementInterface $source, array $targets, array $params): array
     {
-        $patternList = $this->configuration->getPatternList();
-        if (!empty($patternList)) {
+        if (!empty($this->patternList)) {
             foreach ($targets as $key => $item) {
                 if ($item['type'] === 'object') {
                     $targetObject = $this->pimcoreAdapter->getConcreteById($item['id']);
 
-                    foreach ($patternList as $className => $pattern) {
+                    foreach ($this->patternList as $className => $pattern) {
                         if (class_exists($className) && $targetObject instanceof $className) {
                             $result[$key] = $this->formatDataObjectPath($targetObject, $pattern);
                             break;
@@ -85,7 +86,7 @@ class BasilicomPathFormatter implements PathFormatterInterface
     {
         $imagePath = $propertyValue->getFullPath();
 
-        return $this->configuration->isAssetPreviewEnabled()
+        return $this->enableAssetPreview
             ? '<img src="' . $imagePath . '" style="height: 18px; margin-right: 5px;" />'
             : $imagePath;
     }

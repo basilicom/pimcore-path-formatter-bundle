@@ -100,11 +100,7 @@ class BasilicomPathFormatterTest extends TestCase
         $pimcoreAdapterMock = $this->createMock(PimcoreAdapter::class);
         $pimcoreAdapterMock->method('getConcreteById')->willReturn($productMock);
 
-        $configMock = $this->createMock(Configuration::class);
-        $configMock->method('getPatternList')->willReturn($patternConfig);
-        $configMock->method('isAssetPreviewEnabled')->willReturn($imagePreviewRenderingEnabled);
-
-        $classUnderTest = new BasilicomPathFormatter($pimcoreAdapterMock, $configMock);
+        $classUnderTest = new BasilicomPathFormatter($pimcoreAdapterMock, $imagePreviewRenderingEnabled, $patternConfig);
 
         // test
         $result = $classUnderTest->formatPath([], $sourceMock, $rawPaths, []);

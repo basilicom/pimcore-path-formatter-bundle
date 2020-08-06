@@ -21,11 +21,9 @@ class BasilicomPathFormatterExtension extends Extension
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yml');
 
-        $pathFormatterConfig = new Configuration(
-            (bool) $config[ConfigDefinition::ENABLE_ASSET_PREVIEW],
-            (array) $config[ConfigDefinition::PATTERN_LIST]
-        );
+        $definition = $container->getDefinition(BasilicomPathFormatter::class);
 
-        $container->getDefinition(BasilicomPathFormatter::class)->setArgument(1, $pathFormatterConfig);
+        $definition->setArgument(1, (bool) $config[ConfigDefinition::ENABLE_ASSET_PREVIEW]);
+        $definition->setArgument(2, (array) $config[ConfigDefinition::PATTERN_LIST]);
     }
 }
