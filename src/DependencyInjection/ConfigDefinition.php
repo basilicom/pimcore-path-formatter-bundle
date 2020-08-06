@@ -25,7 +25,10 @@ class ConfigDefinition implements ConfigurationInterface
             ->getRootNode()
             ->children()
                 ->booleanNode(self::ENABLE_ASSET_PREVIEW)->defaultTrue()->end()
-                ->arrayNode(self::PATTERN_LIST)->end()
+                ->arrayNode(self::PATTERN_LIST)
+                    ->useAttributeAsKey('patternClass')
+                    ->scalarPrototype()->end()
+                ->end()
             ->end();
 
         return $treeBuilder;
