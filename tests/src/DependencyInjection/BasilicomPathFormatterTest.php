@@ -25,28 +25,31 @@ class BasilicomPathFormatterTest extends TestCase
         $productMock = new ProductMock();
         $productMock->setImage($assetMock);
 
+        $rawPaths = [
+            [
+                'id' => 1,
+                'type' => 'object',
+            ],
+        ];
+
         return [
             'only class property' => [
                 $productMock,
                 $patternConfig = ['Pimcore\Model\DataObject\Concrete' => '{price}{unit}'],
-                $rawPaths = [
-                    [
-                        'id' => 1,
-                        'type' => 'object',
-                    ],
-                ],
+                $rawPaths,
                 $expectedResult = ['10€'],
             ],
             'pimcore concrete properties' => [
                 $productMock,
                 $patternConfig = ['Pimcore\Model\DataObject\Concrete' => '{fullPath} - {price}{unit}'],
-                $rawPaths = [
-                    [
-                        'id' => 1,
-                        'type' => 'object',
-                    ],
-                ],
+                $rawPaths,
                 $expectedResult = ['/dataObjects/product - 10€'],
+            ],
+            'config for non-existing class' => [
+                $productMock,
+                $patternConfig = ['Pimcore\Model\DataObject\Concreteeee' => '{fullPath} - {price}{unit}'],
+                $rawPaths,
+                $expectedResult = [],
             ],
             'use first true class check' => [
                 $productMock,
@@ -54,35 +57,20 @@ class BasilicomPathFormatterTest extends TestCase
                     'Pimcore\Model\DataObject\Concrete' => '{price}{unit}',
                     'Basilicom\PathFormatterBundle\Fixtures\ProductMock' => 'Product price: {price}{unit}',
                 ],
-                $rawPaths = [
-                    [
-                        'id' => 1,
-                        'type' => 'object',
-                    ],
-                ],
+                $rawPaths,
                 $expectedResult = ['10€'],
             ],
             'image rendering active' => [
                 $productMock,
                 $patternConfig = ['Pimcore\Model\DataObject\Concrete' => '{image} {price}{unit}'],
-                $rawPaths = [
-                    [
-                        'id' => 1,
-                        'type' => 'object',
-                    ],
-                ],
+                $rawPaths,
                 $expectedResult = ['<img src="/images/some-file.png" style="height: 18px; margin-right: 5px;" /> 10€'],
                 $imagePreviewRenderingEnabled = true,
             ],
             'image rendering inactive' => [
                 $productMock,
                 $patternConfig = ['Pimcore\Model\DataObject\Concrete' => '{image} {price}{unit}'],
-                $rawPaths = [
-                    [
-                        'id' => 1,
-                        'type' => 'object',
-                    ],
-                ],
+                $rawPaths,
                 $expectedResult = ['/images/some-file.png 10€'],
                 $imagePreviewRenderingEnabled = false,
             ],

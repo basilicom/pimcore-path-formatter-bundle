@@ -39,7 +39,7 @@ class BasilicomPathFormatter implements PathFormatterInterface
                     $targetObject = $this->pimcoreAdapter->getConcreteById($item['id']);
 
                     foreach ($patternList as $className => $pattern) {
-                        if ($targetObject instanceof $className) {
+                        if (class_exists($className) && $targetObject instanceof $className) {
                             $result[$key] = $this->formatDataObjectPath($targetObject, $pattern);
                             break;
                         }
