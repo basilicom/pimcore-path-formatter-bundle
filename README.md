@@ -1,41 +1,39 @@
 # Basilicom Extended Path Formatter Bundle for Pimcore
 
-### How it works
-This plugin provides a custom Pimcore-Backend path formatter as well as a simple, yaml-file-based configuration for the shown path of dataObjects in multi-relation-fields.  
-
-### Usage
-Add ``@Basilicom\PathFormatterBundle\DependencyInjection\BasilicomPathFormatter`` to the Formatter-Field in the relation-fieldType.  
-**Note:** The ``@`` is important, as the formatter is registered as a service, including dependency injection.
-
-Add the following config to your ``app/config/config.yml``
+### Usecase
+If you want to display specific informations of a dataObject when it's listed in a relation-field, you can use this plugin to configure a pattern of data.
+E.g. displaying the name, price and currency of a product could realise by configuring:
 ```
 basilicom_path_formatter:
   pattern: 
+    Pimcore\Model\DataObject\Product: "{name} {price}{currency}"    # specific dataObject pattern (overwrites generic one)
 ```
 
-Add the full qualified class-name, that should be formatted, as key to the pattern list and define the pattern as value.
-Configure the pattern placing class-property-names, accessible by public getter methods, between curly brackets.  
-You also can reference basic dataObject methods like: 
-- ``fullPath`` for ``\Pimcore\Model\DataObject\AbstractObject::getFullPath())`` 
-- ``className`` for ``\Pimcore\Model\DataObject\AbstractObject::getClassName())``
-- ...
-
-```
-basilicom_path_formatter:
-  pattern: 
-    Pimcore\Model\DataObject\Product: "{fullPath} - {price}{unit}"
+### Installation and configuration
+1. Install the bundle using ``composer require basilicom/path-formatter-bundle 1.0``
+2. Execute ``bin/console pimcore:bundle:enable BasilicomPathFormatterBundle``
+3. Add the following config snippet to your Pimcore ``app/config/config.yml``
+   ```
+   basilicom_path_formatter:
+     pattern: 
+   ```
+4. Configure a pattern by adding the full qualified dataObject class-name as key the pattern-string as value.  
+   Use class-property-names, accessible by public getter methods, surrounded by curly brackets.  
+   This also enables you to reference basic Pimcore ``Concrete``/``AbstractObject`` methods like: 
+    - ``fullPath`` for ``\Pimcore\Model\DataObject\AbstractObject::getFullPath())`` 
+    - ``className`` for ``\Pimcore\Model\DataObject\AbstractObject::getClassName())``
+    - ...  
     
-    # the class should have a getPrice() and getUnit() method
-    # getFullPath() is a basic method from the Pimcore Concrete 
-```
+   **Note:** If no getter exists for the property, the placeholder will stay untouched.
+5. Add ``@Basilicom\PathFormatterBundle\DependencyInjection\BasilicomPathFormatter`` to the Formatter-Field in the relation-fieldType.  
+   **Note:** The ``@`` is important, as the formatter is registered as a service, including dependency injection.
 
-If no getter exists for the property, the placeholder will stay untouched.
 
-### Showing images
+#### Showing images
 
 As soon the value of a class property is a ``Pimcore\ModelAsset\Image`` it will be rendered as small preview in the relation-list.
 
-#### Example
+### Example
 Product class ``var/classes/DataObject/Product.php``
 ```
 class Product extends Concrete
@@ -44,7 +42,7 @@ class Product extends Concrete
     protected $o_className = "Product";
     protected $name;
     protected $price;
-    protected $unit;
+    protected $currency;
     
     /**
      * Get name
@@ -67,11 +65,11 @@ class Product extends Concrete
     }
     
     /**
-     * Get unit
+     * Get currency
      *
      * @return string
      */
-    public function getUnit()
+    public function getCurrency()
     {
         // EUR
     }
@@ -84,13 +82,12 @@ Necessary config in ``app/config/config.yml``
 ```
 basilicom_path_formatter:
   pattern: 
-    Pimcore\Model\DataObject\Product: "{name} {price}{unit}"    # specific dataObject pattern (overwrites generic one)
+    Pimcore\Model\DataObject\Product: "{name} {price}{currency}"    # specific dataObject pattern (overwrites generic one)
     Pimcore\Model\DataObject\Concrete: "{fullPath}"             # generic pattern
 ```
 
 ### Todos
-- add button to relation-fields to prefill the formatter class
-- implement helper methods for simple string modifications
-- overwrite cpatterns add ``context`` configuration
+- overwrite patterns by adding a ``context`` configuration
     - based on class
     - based on class and fieldname
+- implement helper methods for simple string modifications
