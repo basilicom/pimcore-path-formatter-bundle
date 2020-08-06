@@ -91,6 +91,6 @@ basilicom_path_formatter:
 ### Todos
 - add button to relation-fields to prefill the formatter class
 - implement helper methods for simple string modifications
-- add ``context`` configuration
+- overwrite cpatterns add ``context`` configuration
     - based on class
-    - based on class fieldname
+    - based on class and fieldname
