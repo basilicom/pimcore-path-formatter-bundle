@@ -18,7 +18,7 @@ class BasilicomPathFormatterExtensionTest extends TestCase
     {
         // prepare
         $configs = Yaml::parse(
-            file_get_contents(dirname(dirname(dirname(__DIR__))) . '/src/Resources/config/pimcore/config.yml')
+            file_get_contents(dirname(dirname(__DIR__)) . '/fixtures/config.yml')
         );
 
         $containerDefinitionMock = $this->createMock(Definition::class);
