@@ -86,3 +86,4 @@ basilicom_path_formatter:
 - add button to relation-fields to prefill the formatter class
 - implement helper methods for simple string modifications
 - allow output of nested properties like ``{productImage.fullPath}``
+- make image preview rendering configurable to avoid large image files in a dataObject overview
