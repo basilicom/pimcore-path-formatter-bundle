@@ -1,0 +1,4 @@
+basilicom_path_formatter:
+  enable_asset_preview: true
+  pattern:
+     Pimcore\Model\DataObject\Concrete: "" # this will work for all dataObjects
