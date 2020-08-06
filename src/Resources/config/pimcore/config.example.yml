@@ -1,4 +1,12 @@
 basilicom_path_formatter:
   enable_asset_preview: true
   pattern:
-     Pimcore\Model\DataObject\Concrete: "" # this will work for all dataObjects
+    # this is a global configuration for the display of basic/premium product information
+    Pimcore\Model\DataObject\BasicProduct: "Basic - {name}"
+    Pimcore\Model\DataObject\PremiumProduct: "Premium - {name}"
+
+    Pimcore\Model\DataObject\ProductList: "Product-list with {count} products"
+    Pimcore\Model\DataObject\ProductList::countryRelations:
+      patternOverwrites:
+        Pimcore\Model\DataObject\BasicProduct: "[{countyIso}] Basic - {name}"
+        Pimcore\Model\DataObject\PremiumProduct: "[{countyIso}] Premium - {name}"

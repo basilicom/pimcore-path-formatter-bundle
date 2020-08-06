@@ -12,6 +12,16 @@ class ProductMock extends Concrete
     protected $o_path = '/dataObjects/';
     protected $o_key = 'product';
 
+    public function getName(): string
+    {
+        return 'Sneakers';
+    }
+
+    public function getCountyIso(): string
+    {
+        return 'de';
+    }
+
     public function getPrice(): int
     {
         return 10;

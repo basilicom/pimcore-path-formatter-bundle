@@ -18,7 +18,7 @@ class BasilicomPathFormatterExtensionTest extends TestCase
     {
         // prepare
         $configs = Yaml::parse(
-            file_get_contents(dirname(dirname(__DIR__)) . '/fixtures/config.yml')
+            file_get_contents(dirname(dirname(dirname(__DIR__))) . '/src/Resources/config/pimcore/config.example.yml')
         );
 
         $containerDefinitionMock = $this->createMock(Definition::class);
@@ -30,7 +30,21 @@ class BasilicomPathFormatterExtensionTest extends TestCase
             ->with(
                 2,
                 [
-                    'Pimcore\Model\DataObject\Concrete' => '',
+                    'Pimcore\Model\DataObject\BasicProduct' => [
+                        'pattern' => 'Basic - {name}',
+                    ],
+                    'Pimcore\Model\DataObject\PremiumProduct' => [
+                        'pattern' => 'Premium - {name}',
+                    ],
+                    'Pimcore\Model\DataObject\ProductList' => [
+                        'pattern' => 'Product-list with {count} products',
+                    ],
+                    'Pimcore\Model\DataObject\ProductList::countryRelations' => [
+                        'patternOverwrites' => [
+                            'Pimcore\Model\DataObject\BasicProduct' => '[{countyIso}] Basic - {name}',
+                            'Pimcore\Model\DataObject\PremiumProduct' => '[{countyIso}] Premium - {name}',
+                        ],
+                    ],
                 ]
             );
 
