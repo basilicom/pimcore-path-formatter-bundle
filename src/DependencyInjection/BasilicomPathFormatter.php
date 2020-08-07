@@ -43,7 +43,7 @@ class BasilicomPathFormatter implements PathFormatterInterface
                         if (strrpos($patternKey, '::') !== false) {
                             $formattedPath = $this->getFormattedPathWithContext(
                                 $patternKey,
-                                $patternConfig['patternOverwrites'],
+                                $patternConfig[ConfigDefinition::PATTERN_OVERWRITES],
                                 $params['context'],
                                 $source,
                                 $targetObject
@@ -51,7 +51,7 @@ class BasilicomPathFormatter implements PathFormatterInterface
                         } else {
                             $formattedPath = $this->getFormattedPath(
                                 $patternKey,
-                                $patternConfig['pattern'],
+                                $patternConfig[ConfigDefinition::PATTERN],
                                 $targetObject
                             );
                         }

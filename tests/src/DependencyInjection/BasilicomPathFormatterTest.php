@@ -91,9 +91,11 @@ class BasilicomPathFormatterTest extends TestCase
             ],
             'image rendering inactive' => [
                 $productMock,
-                $patternConfig = ['Pimcore\Model\DataObject\Concrete' => [
-                    'pattern' => '{image} {price}{unit}'
-                ]],
+                $patternConfig = [
+                    'Pimcore\Model\DataObject\Concrete' => [
+                        'pattern' => '{image} {price}{unit}',
+                    ],
+                ],
                 $rawPaths,
                 $expectedResult = ['/images/some-file.png 10€'],
                 $imagePreviewRenderingEnabled = false,
@@ -164,10 +166,10 @@ class BasilicomPathFormatterTest extends TestCase
 
         $patternConfig = [
             'Pimcore\Model\DataObject\Product' => [
-                'pattern' => 'Product: {name}',
+                ConfigDefinition::PATTERN => 'Product: {name}',
             ],
             'Pimcore\Model\DataObject\ProductList::countryRelations' => [
-                'patternOverwrites' => [
+                ConfigDefinition::PATTERN_OVERWRITES => [
                     'Pimcore\Model\DataObject\Product' => '[{countryIso}] Product: {name}',
                 ],
             ],

@@ -31,16 +31,16 @@ class BasilicomPathFormatterExtensionTest extends TestCase
                 2,
                 [
                     'Pimcore\Model\DataObject\BasicProduct' => [
-                        'pattern' => 'Basic - {name}',
+                        ConfigDefinition::PATTERN => 'Basic - {name}',
                     ],
                     'Pimcore\Model\DataObject\PremiumProduct' => [
-                        'pattern' => 'Premium - {name}',
+                        ConfigDefinition::PATTERN => 'Premium - {name}',
                     ],
                     'Pimcore\Model\DataObject\ProductList' => [
-                        'pattern' => 'Product-list with {count} products',
+                        ConfigDefinition::PATTERN => 'Product-list with {count} products',
                     ],
                     'Pimcore\Model\DataObject\ProductList::countryRelations' => [
-                        'patternOverwrites' => [
+                        ConfigDefinition::PATTERN_OVERWRITES => [
                             'Pimcore\Model\DataObject\BasicProduct' => '[{countryIso}] Basic - {name}',
                             'Pimcore\Model\DataObject\PremiumProduct' => '[{countryIso}] Premium - {name}',
                         ],

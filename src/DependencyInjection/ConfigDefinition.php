@@ -5,15 +5,11 @@ namespace Basilicom\PathFormatterBundle\DependencyInjection;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
-/**
- * This is the class that validates and merges configuration from your app/config files.
- *
- * To learn more see {@link http://symfony.com/doc/current/cookbook/bundles/configuration.html}
- */
 class ConfigDefinition implements ConfigurationInterface
 {
-    const ENABLE_ASSET_PREVIEW = 'enable_asset_preview';
-    const PATTERN_LIST = 'pattern';
+    public const ENABLE_ASSET_PREVIEW = 'enable_asset_preview';
+    public const PATTERN = 'pattern';
+    public const PATTERN_OVERWRITES = 'patternOverwrites';
 
     /**
      * {@inheritdoc}
@@ -25,13 +21,13 @@ class ConfigDefinition implements ConfigurationInterface
             ->getRootNode()
             ->children()
                 ->booleanNode(self::ENABLE_ASSET_PREVIEW)->defaultTrue()->end()
-                ->arrayNode(self::PATTERN_LIST)
+                ->arrayNode(self::PATTERN)
                     ->useAttributeAsKey('patternClass')
                     ->arrayPrototype()
                         ->validate()
                             ->always(function ($v) {
-                                if (empty($v['patternOverwrites'])) {
-                                    unset($v['patternOverwrites']);
+                                if (empty($v[ConfigDefinition::PATTERN_OVERWRITES])) {
+                                    unset($v[ConfigDefinition::PATTERN_OVERWRITES]);
                                 }
 
                                 return $v;
@@ -42,7 +38,7 @@ class ConfigDefinition implements ConfigurationInterface
                         ->end()
                         ->children()
                             ->scalarNode('pattern')->end()
-                            ->arrayNode('patternOverwrites')
+                            ->arrayNode(self::PATTERN_OVERWRITES)
                                 ->useAttributeAsKey('patternClass')
                                 ->scalarPrototype()->end()
                             ->end()
