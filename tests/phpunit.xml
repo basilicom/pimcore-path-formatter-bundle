@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/7.4/phpunit.xsd" bootstrap="_bootstrap.php" colors="true">
-    <testsuite name='unit-tests'>
-        <directory suffix='.php'>./unittests/src</directory>
-    </testsuite>
-    <testsuite name='integration-tests'>
-        <directory suffix='.php'>./integrationtests/src</directory>
-    </testsuite>
+    <testsuites>
+        <testsuite name="unit">
+            <directory>./unittests/</directory>
+        </testsuite>
+        <testsuite name="integration">
+            <directory>./integrationtests/</directory>
+        </testsuite>
+    </testsuites>
 
     <filter>
         <whitelist processUncoveredFilesFromWhitelist="true">
