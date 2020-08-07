@@ -17,9 +17,7 @@ class BasilicomPathFormatterExtensionTest extends TestCase
     public function load(): void
     {
         // prepare
-        $configs = Yaml::parse(
-            file_get_contents(dirname(dirname(dirname(__DIR__))) . '/src/Resources/config/pimcore/config.example.yml')
-        );
+        $configs = Yaml::parse(file_get_contents($this->getConfigPath()));
 
         $containerDefinitionMock = $this->createMock(Definition::class);
         $containerDefinitionMock->expects($this->at(0))
@@ -56,5 +54,13 @@ class BasilicomPathFormatterExtensionTest extends TestCase
         // test
         $classUnderTest->load($configs, $containerMock);
         // verified by setup
+    }
+
+    /**
+     * @return string
+     */
+    private function getConfigPath(): string
+    {
+        return dirname(dirname(dirname(dirname(__DIR__)))) . '/src/Resources/config/pimcore/config.example.yml';
     }
 }
