@@ -84,3 +84,8 @@ This feature can be disabled by setting the value of ``enable_asset_preview`` to
 basilicom_path_formatter:
   enable_asset_preview: true|false # default true
 ```
+
+-------
+
+**Author:** Alexander Heidrich (Basilicom GmbH)  
+**License:** GPL v3
