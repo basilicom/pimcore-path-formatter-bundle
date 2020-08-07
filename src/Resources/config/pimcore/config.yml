@@ -1,0 +1,3 @@
+basilicom_path_formatter:
+  enable_asset_preview: true
+  pattern:
