@@ -26,7 +26,7 @@ While the product will be formatted like ``Sneakers 19.99EUR`` in all relation-f
 
 
 ## Installation
-1. Install the bundle using ``composer require basilicom/path-formatter-bundle 1.0``
+1. Install the bundle using ``composer require basilicom/pimcore-path-formatter-bundle``
 2. Execute ``bin/console pimcore:bundle:enable BasilicomPathFormatterBundle``
 
 ## Configuration
