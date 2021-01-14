@@ -61,10 +61,11 @@ if (class_exists('\\Basilicom\\PathFormatterBundle\\BasilicomPathFormatterBundle
     
 
 ## Advanced configuration
+### Contextual pattern overwrites 
 It is possible to configure a context-based pattern, so that a dataObject in a relation-field of a specific class will be formatted differently.  
 
 **Example:**
-```
+```yaml
 # app/config/config.yml
 basilicom_path_formatter:
   pattern: 
@@ -81,6 +82,19 @@ basilicom_path_formatter:
 ```
 
 While the product will be formatted like ``Sneakers 19.99EUR`` in all relation-fields, the ProductList-Class will show them like ``#13 - Sneakers`` or ``#13 - Sneakers (premium-only!)``, based on the product class.
+
+### Formatting documents and assets
+```yaml
+basilicom_path_formatter:
+  pattern:
+    Pimcore\Model\Asset: "{id} {key}"
+    Pimcore\Model\Document: "{id} {key}"
+
+    Pimcore\Model\DataObject\Car::files:
+      patternOverwrites:
+        Pimcore\Model\Asset: "{key}"
+        Pimcore\Model\Document: "{key}"
+```
 
 ## Additional features
 
