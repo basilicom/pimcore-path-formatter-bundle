@@ -35,12 +35,16 @@ class BasilicomPathFormatter implements PathFormatterInterface
         if (!empty($this->patternConfiguration)) {
             foreach ($targets as $key => $item) {
                 if ($item['type'] === 'object') {
-                    $target = $this->pimcoreAdapter->getConcreteById($item['id']);
+                    $targetElement = $this->pimcoreAdapter->getConcreteById($item['id']);
                 } elseif ($item['type'] === 'asset') {
-                    $target = $this->pimcoreAdapter->getAssetById($item['id']);
+                    $targetElement = $this->pimcoreAdapter->getAssetById($item['id']);
                 } elseif ($item['type'] === 'document') {
-                    $target = $this->pimcoreAdapter->getDocumentById($item['id']);
+                    $targetElement = $this->pimcoreAdapter->getDocumentById($item['id']);
                 } else {
+                    continue;
+                }
+
+                if (!$targetElement) {
                     continue;
                 }
 
@@ -51,13 +55,13 @@ class BasilicomPathFormatter implements PathFormatterInterface
                             $patternConfig[ConfigDefinition::PATTERN_OVERWRITES],
                             $params['context'],
                             $source,
-                            $target
+                            $targetElement
                         );
                     } else {
                         $formattedPath = $this->getFormattedPath(
                             $patternKey,
                             $patternConfig[ConfigDefinition::PATTERN],
-                            $target
+                            $targetElement
                         );
                     }
 
