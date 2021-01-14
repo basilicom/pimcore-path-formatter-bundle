@@ -26,8 +26,16 @@ While the product will be formatted like ``Sneakers 19.99EUR`` in all relation-f
 
 
 ## Installation
-1. Install the bundle using ``composer require basilicom/pimcore-path-formatter-bundle``
-2. Execute ``bin/console pimcore:bundle:enable BasilicomPathFormatterBundle``
+Install the bundle using ``composer require basilicom/pimcore-path-formatter-bundle``  
+
+Execute ``bin/console pimcore:bundle:enable BasilicomPathFormatterBundle``  
+**or**  
+add the following lines to `AppKernel::registerBundlesToCollection()` (**recommended**)
+```php
+if (class_exists('\\Basilicom\\PathFormatterBundle\\BasilicomPathFormatterBundle')) {
+      $collection->addBundle(new \Basilicom\PathFormatterBundle\BasilicomPathFormatterBundle);
+}
+```
 
 ## Configuration
 1. Add the ``basilicom_path_formatter`` key to your Pimcore ``app/config/config.yml``
