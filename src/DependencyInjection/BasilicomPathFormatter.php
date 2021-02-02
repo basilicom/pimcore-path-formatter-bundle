@@ -23,10 +23,10 @@ class BasilicomPathFormatter implements PathFormatterInterface
     }
 
     /**
-     * @param array $result containing the nice path info. Modify it or leave it as it is. Pass it out afterwards!
-     * @param ElementInterface $source the source object
-     * @param array $targets list of nodes describing the target elements
-     * @param array $params optional parameters. may contain additional context information in the future. to be defined.
+     * @param array            $result  containing the nice path info. Modify it or leave it as it is. Pass it out afterwards!
+     * @param ElementInterface $source  the source object
+     * @param array            $targets list of nodes describing the target elements
+     * @param array            $params  optional parameters. may contain additional context information in the future. to be defined.
      *
      * @return array list of display names.
      */
@@ -109,9 +109,13 @@ class BasilicomPathFormatter implements PathFormatterInterface
             return '';
         }
 
+        $formattedPath = $pattern;
+        if ($targetElement instanceof Asset\Image && $this->enableAssetPreview) {
+            $formattedPath = '<img src="' . $targetElement->getFullPath() . '" style="height: 18px; margin-right: 5px;" /> ' . $formattedPath;
+        }
+
         $propertyList = $this->getPropertyListFromPattern($pattern);
 
-        $formattedPath = $pattern;
         foreach ($propertyList as $property) {
             $propertyGetter = 'get' . ucfirst(trim($property));
             if (method_exists($targetElement, $propertyGetter)) {
@@ -139,5 +143,4 @@ class BasilicomPathFormatter implements PathFormatterInterface
 
         return !empty($matches) ? $matches[1] : [];
     }
-
 }
