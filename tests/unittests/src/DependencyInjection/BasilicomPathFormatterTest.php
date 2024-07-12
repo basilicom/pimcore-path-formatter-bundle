@@ -18,10 +18,11 @@ class BasilicomPathFormatterTest extends TestCase
     public function formatPathDataProvider(): array
     {
         $assetMock = $this->createMock(Image::class);
-        $assetMock->method('getFullPath')
-            ->willReturn('/images/some-file.png');
+        $assetMock->method('getFullPath')->willReturn('/images/some-file.png');
 
         $productMock = new Product();
+        $productMock->setKey('product');
+        $productMock->setPath('/dataObjects/');
         $productMock->setImage($assetMock);
 
         $rawPaths = [
@@ -48,7 +49,7 @@ class BasilicomPathFormatterTest extends TestCase
                 $patternConfig = [
                     'Pimcore\Model\DataObject\Concrete' =>
                         [
-                            'pattern' => '{fullPath} - {price}{unit}',
+                            'pattern' => '{fullpath} - {price}{unit}',
                         ],
                 ],
                 $rawPaths,
@@ -59,7 +60,7 @@ class BasilicomPathFormatterTest extends TestCase
                 $patternConfig = [
                     'Pimcore\Model\DataObject\Concreteeee' =>
                         [
-                            'pattern' => '{fullPath} - {price}{unit}',
+                            'pattern' => '{fullpath} - {price}{unit}',
                         ],
                 ],
                 $rawPaths,
@@ -106,19 +107,13 @@ class BasilicomPathFormatterTest extends TestCase
     /**
      * @test
      * @dataProvider formatPathDataProvider
-     *
-     * @param Product $productMock
-     * @param array   $patternConfig
-     * @param array   $rawPaths
-     * @param array   $expectedResult
-     * @param bool    $imagePreviewRenderingEnabled
      */
     public function formatPath(
         Product $productMock,
         array $patternConfig,
         array $rawPaths,
         array $expectedResult,
-        bool $imagePreviewRenderingEnabled = false
+        bool $imagePreviewRenderingEnabled = false,
     ): void {
         // prepare
         $sourceMock = $this->createMock(ElementInterface::class);
@@ -128,6 +123,7 @@ class BasilicomPathFormatterTest extends TestCase
 
         $classUnderTest = new BasilicomPathFormatter(
             $pimcoreAdapterMock,
+            true,
             $imagePreviewRenderingEnabled,
             $patternConfig
         );
@@ -178,7 +174,12 @@ class BasilicomPathFormatterTest extends TestCase
         $pimcoreAdapterMock = $this->createMock(PimcoreAdapter::class);
         $pimcoreAdapterMock->method('getConcreteById')->willReturn($productMock);
 
-        $classUnderTest = new BasilicomPathFormatter($pimcoreAdapterMock, false, $patternConfig);
+        $classUnderTest = new BasilicomPathFormatter(
+            $pimcoreAdapterMock,
+            true,
+            false,
+            $patternConfig
+        );
 
         // test
         $result = $classUnderTest->formatPath([], $sourceMock, $rawPaths, $params);
