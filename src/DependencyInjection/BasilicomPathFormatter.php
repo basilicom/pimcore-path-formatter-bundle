@@ -3,6 +3,7 @@
 namespace Basilicom\PathFormatterBundle\DependencyInjection;
 
 use Pimcore\Model\Asset;
+use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\Element\AbstractElement;
 use Pimcore\Model\Element\ElementInterface;
 use Pimcore\Model\DataObject\ClassDefinition\PathFormatterInterface;
@@ -15,18 +16,25 @@ class BasilicomPathFormatter implements PathFormatterInterface
 
     private $patternConfiguration;
 
-    public function __construct(PimcoreAdapter $pimcoreAdapter, bool $enableAssetPreview, array $patternConfiguration)
-    {
+    private $enableInheritance;
+
+    public function __construct(
+        PimcoreAdapter $pimcoreAdapter,
+        bool $enableInheritance,
+        bool $enableAssetPreview,
+        array $patternConfiguration
+    ) {
         $this->pimcoreAdapter = $pimcoreAdapter;
         $this->enableAssetPreview = $enableAssetPreview;
         $this->patternConfiguration = $patternConfiguration;
+        $this->enableInheritance = $enableInheritance;
     }
 
     /**
-     * @param array            $result  containing the nice path info. Modify it or leave it as it is. Pass it out afterwards!
-     * @param ElementInterface $source  the source object
-     * @param array            $targets list of nodes describing the target elements
-     * @param array            $params  optional parameters. may contain additional context information in the future. to be defined.
+     * @param array $result containing the nice path info. Modify it or leave it as it is. Pass it out afterwards!
+     * @param ElementInterface $source the source object
+     * @param array $targets list of nodes describing the target elements
+     * @param array $params optional parameters. may contain additional context information in the future. to be defined.
      *
      * @return array list of display names.
      */
@@ -109,6 +117,11 @@ class BasilicomPathFormatter implements PathFormatterInterface
             return '';
         }
 
+        if ($this->enableInheritance) {
+            $wasInheritanceEnabled = Concrete::getGetInheritedValues();
+            Concrete::setGetInheritedValues(true);
+        }
+
         $formattedPath = $pattern;
         if ($targetElement instanceof Asset\Image && $this->enableAssetPreview) {
             $formattedPath = '<img src="' . $targetElement->getFullPath() . '" style="height: 18px; margin-right: 5px;" /> ' . $formattedPath;
@@ -131,6 +144,10 @@ class BasilicomPathFormatter implements PathFormatterInterface
 
                 $formattedPath = str_replace('{' . $property . '}', $replacement, $formattedPath);
             }
+        }
+
+        if ($this->enableInheritance) {
+            Concrete::setGetInheritedValues($wasInheritanceEnabled);
         }
 
         return $formattedPath;
