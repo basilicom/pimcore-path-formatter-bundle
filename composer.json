@@ -20,7 +20,10 @@
     }
   ],
   "config": {
-    "sort-packages": true
+    "sort-packages": true,
+    "allow-plugins": {
+      "ocramius/package-versions": true
+    }
   },
   "require": {
     "php": ">=7.3",

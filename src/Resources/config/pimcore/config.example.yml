@@ -1,4 +1,5 @@
 basilicom_path_formatter:
+  enable_inheritance: true # whether to also show inherited values, works only for DataObjects
   enable_asset_preview: true
   pattern:
     # this is a global configuration for the pattern of the specific dataObject in a relation field

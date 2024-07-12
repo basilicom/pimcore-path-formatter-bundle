@@ -22,7 +22,8 @@ class BasilicomPathFormatterExtension extends Extension
 
         $definition = $container->getDefinition(BasilicomPathFormatter::class);
 
-        $definition->setArgument(1, (bool) $config[ConfigDefinition::ENABLE_ASSET_PREVIEW]);
-        $definition->setArgument(2, (array) $config[ConfigDefinition::PATTERN]);
+        $definition->setArgument(1, (bool)$config[ConfigDefinition::ENABLE_INHERITANCE]);
+        $definition->setArgument(2, (bool)$config[ConfigDefinition::ENABLE_ASSET_PREVIEW]);
+        $definition->setArgument(3, (array)$config[ConfigDefinition::PATTERN]);
     }
 }
