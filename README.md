@@ -105,6 +105,13 @@ basilicom_path_formatter:
 
 ## Additional features
 
+### Toggle inherited values in DataObjects
+Inherited values from DataObjects will be used by default. In order to avoid this, just disable the configuration:
+```
+basilicom_path_formatter:
+  enable_inheritance: true|false # default true
+```
+
 ### Showing images
 As soon as you reference a property in the pattern, which is a ``Pimcore\ModelAsset\Image``, it will be rendered as small preview in the relation-list.
 This feature can be disabled by setting the value of ``enable_asset_preview`` to ``false``.
