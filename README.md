@@ -24,6 +24,13 @@ While the product will be formatted like ``Sneakers 19.99EUR`` in all relation-f
 
 ----------
 
+## Version information
+
+| Bundle Version | PHP  | Pimcore |
+|----------------|------|---------|
+| &lt; 2.0       | ^7.3 | ^6.0    |
+| &gt;= 2.0      | ^8.1 | ^10.0   |
+| &gt;= 3.0      | ^8.1 | ^11.0   |
 
 ## Installation
 Install the bundle using ``composer require basilicom/pimcore-path-formatter-bundle``  
