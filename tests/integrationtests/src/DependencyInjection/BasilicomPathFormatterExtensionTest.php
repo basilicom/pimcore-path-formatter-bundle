@@ -25,8 +25,11 @@ class BasilicomPathFormatterExtensionTest extends TestCase
             ->with(1, true);
         $containerDefinitionMock->expects($this->at(1))
             ->method('setArgument')
+            ->with(2, true);
+        $containerDefinitionMock->expects($this->at(2))
+            ->method('setArgument')
             ->with(
-                2,
+                3,
                 [
                     'Pimcore\Model\DataObject\BasicProduct' => [
                         ConfigDefinition::PATTERN => 'Basic - {name}',

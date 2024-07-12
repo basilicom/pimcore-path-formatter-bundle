@@ -7,6 +7,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 class ConfigDefinition implements ConfigurationInterface
 {
+    public const ENABLE_INHERITANCE = 'enable_inheritance';
     public const ENABLE_ASSET_PREVIEW = 'enable_asset_preview';
     public const PATTERN = 'pattern';
     public const PATTERN_OVERWRITES = 'patternOverwrites';
@@ -14,12 +15,13 @@ class ConfigDefinition implements ConfigurationInterface
     /**
      * {@inheritdoc}
      */
-    public function getConfigTreeBuilder()
+    public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('basilicom_path_formatter');
         $treeBuilder
             ->getRootNode()
             ->children()
+                ->booleanNode(self::ENABLE_INHERITANCE)->defaultTrue()->end()
                 ->booleanNode(self::ENABLE_ASSET_PREVIEW)->defaultTrue()->end()
                 ->arrayNode(self::PATTERN)
                     ->useAttributeAsKey('patternClass')

@@ -20,11 +20,14 @@
     }
   ],
   "config": {
-    "sort-packages": true
+    "sort-packages": true,
+    "allow-plugins": {
+      "ocramius/package-versions": true
+    }
   },
   "require": {
     "php": ">=7.3",
-    "pimcore/pimcore": ">=6.0"
+    "pimcore/pimcore": ">=6.0 < 10"
   },
   "suggest": {},
   "require-dev": {
