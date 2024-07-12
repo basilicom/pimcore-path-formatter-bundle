@@ -12,5 +12,9 @@ putenv('PIMCORE_ENVIRONMENT=test');
 
 require_once realpath(__DIR__ . '/..') . '/vendor/autoload.php';
 
+file_put_contents(dirname(__DIR__) . '/.env', 'APP_ENV=test');
+
 Bootstrap::setProjectRoot();
 Bootstrap::bootstrap();
+
+unlink(dirname(__DIR__) . '/.env');

@@ -10,13 +10,13 @@ use Pimcore\Model\DataObject\ClassDefinition\PathFormatterInterface;
 
 class BasilicomPathFormatter implements PathFormatterInterface
 {
-    private $pimcoreAdapter;
+    private PimcoreAdapter $pimcoreAdapter;
 
-    private $enableAssetPreview;
+    private bool $enableAssetPreview;
 
-    private $patternConfiguration;
+    private array $patternConfiguration;
 
-    private $enableInheritance;
+    private bool $enableInheritance;
 
     public function __construct(
         PimcoreAdapter $pimcoreAdapter,
@@ -117,8 +117,8 @@ class BasilicomPathFormatter implements PathFormatterInterface
             return '';
         }
 
+        $wasInheritanceEnabled = Concrete::getGetInheritedValues();
         if ($this->enableInheritance) {
-            $wasInheritanceEnabled = Concrete::getGetInheritedValues();
             Concrete::setGetInheritedValues(true);
         }
 
