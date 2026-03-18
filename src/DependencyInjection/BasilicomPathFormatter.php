@@ -81,6 +81,10 @@ class BasilicomPathFormatter implements PathFormatterInterface
             }
         }
 
+        if (empty($result)) {
+            $result[0] = null;
+        }
+
         return $result;
     }
 
