@@ -3,14 +3,14 @@
 namespace Basilicom\PathFormatterBundle\DependencyInjection;
 
 use Pimcore\Model\Asset;
+use Pimcore\Model\DataObject;
 use Pimcore\Model\Document;
-use Pimcore\Model\DataObject\Concrete;
 
 class PimcoreAdapter
 {
-    public function getConcreteById(int $id): ?Concrete
+    public function getConcreteById(int $id): ?DataObject
     {
-        return Concrete::getById($id);
+        return DataObject::getById($id);
     }
 
     public function getAssetById(int $id): ?Asset
