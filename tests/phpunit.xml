@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/7.4/phpunit.xsd" bootstrap="_bootstrap.php" colors="true">
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd" bootstrap="_bootstrap.php"
+         colors="true" cacheDirectory=".phpunit.cache">
+    <coverage>
+        <report>
+            <clover outputFile="_output/coverage.xml"/>
+        </report>
+    </coverage>
     <testsuites>
         <testsuite name="unit">
             <directory>./unittests/</directory>
@@ -8,19 +15,16 @@
             <directory>./integrationtests/</directory>
         </testsuite>
     </testsuites>
-
-    <filter>
-        <whitelist processUncoveredFilesFromWhitelist="true">
-            <directory suffix=".php">../src</directory>
-            <exclude>
-                <file>../src/BasilicomPathFormatterBundle.php</file>
-                <directory suffix=".php">../src/Resources</directory>
-            </exclude>
-        </whitelist>
-    </filter>
-
     <logging>
-        <log type="coverage-clover" target="_output/coverage.xml"/>
-        <log type="junit" target="_output/report.xml"/>
+        <junit outputFile="_output/report.xml"/>
     </logging>
+    <source>
+        <include>
+            <directory suffix=".php">../src</directory>
+        </include>
+        <exclude>
+            <file>../src/BasilicomPathFormatterBundle.php</file>
+            <directory suffix=".php">../src/Resources</directory>
+        </exclude>
+    </source>
 </phpunit>

@@ -22,7 +22,8 @@
   "config": {
     "sort-packages": true,
     "allow-plugins": {
-      "ocramius/package-versions": true
+      "ocramius/package-versions": true,
+      "php-http/discovery": true
     }
   },
   "require": {
@@ -31,7 +32,10 @@
   },
   "suggest": {},
   "require-dev": {
-    "phpunit/phpunit": "^9.0"
+    "phpunit/phpunit": "^10.0",
+    "mockery/mockery": "^1.6",
+    "friendsofphp/php-cs-fixer": "^3.89",
+    "phpstan/phpstan": "^2.1"
   },
   "autoload": {
     "psr-4": {

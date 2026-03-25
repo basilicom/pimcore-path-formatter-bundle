@@ -3,13 +3,24 @@
 namespace Pimcore\Model\DataObject;
 
 use Pimcore\Model\Asset;
+use Pimcore\Model\Element\AbstractElement;
 
 class Product extends Concrete
 {
-    private $image;
+    private Asset\Image $image;
+    protected ?AbstractElement $parent;
 
-    protected $o_path = '/dataObjects/';
-    protected $o_key = 'product';
+    public function setParent($parent): static
+    {
+        $this->parent = $parent;
+
+        return $this;
+    }
+
+    public function getParent(): ?AbstractObject
+    {
+        return $this->parent instanceof AbstractObject ? $this->parent : null;
+    }
 
     public function getName(): string
     {
@@ -31,7 +42,7 @@ class Product extends Concrete
         return '€';
     }
 
-    public function setImage(Asset\Image $image)
+    public function setImage(Asset\Image $image): void
     {
         $this->image = $image;
     }

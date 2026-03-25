@@ -4,30 +4,35 @@ declare(strict_types=1);
 
 namespace Basilicom\PathFormatterBundle\DependencyInjection;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Pimcore\Model\Asset\Image;
+use Pimcore\Model\DataObject;
 use Pimcore\Model\DataObject\Product;
 use Pimcore\Model\DataObject\ProductList;
 use Pimcore\Model\Element\ElementInterface;
 
 class BasilicomPathFormatterTest extends TestCase
 {
-    /**
-     * @return array
-     */
-    public function formatPathDataProvider(): array
+    /**  */
+    public static function formatPathDataProvider(): array
     {
-        $assetMock = $this->createMock(Image::class);
-        $assetMock->method('getFullPath')->willReturn('/images/some-file.png');
+        $assetMock = \Mockery::mock('overload:' . Image::class);
+        $assetMock->shouldReceive('getFullPath')->andReturn('/images/some-file.png');
+
+        $parentMock = new DataObject\Folder();
+        $parentMock->setKey('root');
 
         $productMock = new Product();
         $productMock->setKey('product');
         $productMock->setPath('/dataObjects/');
         $productMock->setImage($assetMock);
+        $productMock->setParent($parentMock);
 
         $rawPaths = [
             [
-                'id' => 1,
+                'id'   => 1,
                 'type' => 'object',
             ],
         ];
@@ -36,21 +41,29 @@ class BasilicomPathFormatterTest extends TestCase
             'only class property' => [
                 $productMock,
                 $patternConfig = [
-                    'Pimcore\Model\DataObject\Concrete' =>
-                        [
-                            'pattern' => '{price}{unit}',
-                        ],
+                    'Pimcore\Model\DataObject\Concrete' => [
+                        'pattern' => '{price}{unit}',
+                    ],
                 ],
                 $rawPaths,
                 $expectedResult = ['10€'],
             ],
+            'nested properties' => [
+                $productMock,
+                $patternConfig = [
+                    'Pimcore\Model\DataObject\Concrete' => [
+                        'pattern' => '{key} belongs to {parent.key}',
+                    ],
+                ],
+                $rawPaths,
+                $expectedResult = ['product belongs to root'],
+            ],
             'pimcore concrete properties' => [
                 $productMock,
                 $patternConfig = [
-                    'Pimcore\Model\DataObject\Concrete' =>
-                        [
-                            'pattern' => '{fullpath} - {price}{unit}',
-                        ],
+                    'Pimcore\Model\DataObject\Concrete' => [
+                        'pattern' => '{fullpath} - {price}{unit}',
+                    ],
                 ],
                 $rawPaths,
                 $expectedResult = ['/dataObjects/product - 10€'],
@@ -58,13 +71,12 @@ class BasilicomPathFormatterTest extends TestCase
             'config for non-existing class' => [
                 $productMock,
                 $patternConfig = [
-                    'Pimcore\Model\DataObject\Concreteeee' =>
-                        [
-                            'pattern' => '{fullpath} - {price}{unit}',
-                        ],
+                    'Pimcore\Model\DataObject\Concreteeee' => [
+                        'pattern' => '{fullpath} - {price}{unit}',
+                    ],
                 ],
                 $rawPaths,
-                $expectedResult = [],
+                $expectedResult = [null],
             ],
             'use first true class check' => [
                 $productMock,
@@ -87,7 +99,7 @@ class BasilicomPathFormatterTest extends TestCase
                     ],
                 ],
                 $rawPaths,
-                $expectedResult = ['<img src="/images/some-file.png" style="height: 18px; margin-right: 5px;" /> 10€'],
+                $expectedResult               = ['<img src="/images/some-file.png" style="height: 18px; margin-right: 5px;" /> 10€'],
                 $imagePreviewRenderingEnabled = true,
             ],
             'image rendering inactive' => [
@@ -98,16 +110,14 @@ class BasilicomPathFormatterTest extends TestCase
                     ],
                 ],
                 $rawPaths,
-                $expectedResult = ['/images/some-file.png 10€'],
+                $expectedResult               = ['/images/some-file.png 10€'],
                 $imagePreviewRenderingEnabled = false,
             ],
         ];
     }
 
-    /**
-     * @test
-     * @dataProvider formatPathDataProvider
-     */
+    #[Test]
+    #[DataProvider('formatPathDataProvider')]
     public function formatPath(
         Product $productMock,
         array $patternConfig,
@@ -135,15 +145,13 @@ class BasilicomPathFormatterTest extends TestCase
         $this->assertEquals($expectedResult, $result);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function formatPath_patternOverwrites(): void
     {
         // prepare
         $rawPaths = [
             [
-                'id' => 1,
+                'id'   => 1,
                 'type' => 'object',
             ],
         ];
@@ -151,11 +159,11 @@ class BasilicomPathFormatterTest extends TestCase
         $params = [
             'context' => [
                 'containerType' => 'object',
-                'fieldname' => 'countryRelations',
-                'objectId' => '1',
+                'fieldname'     => 'countryRelations',
+                'objectId'      => '1',
             ],
         ];
-        $productMock = new Product();
+        $productMock    = new Product();
         $expectedResult = ['[de] Product: Sneakers'];
 
         $sourceMock = $this->createMock(ProductList::class);

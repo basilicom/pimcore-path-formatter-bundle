@@ -1,12 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Basilicom\PathFormatterBundle\DependencyInjection;
 
 use Pimcore\Model\Asset;
+use Pimcore\Model\DataObject;
+use Pimcore\Model\DataObject\ClassDefinition\PathFormatterInterface;
 use Pimcore\Model\DataObject\Concrete;
+use Pimcore\Model\Document;
 use Pimcore\Model\Element\AbstractElement;
 use Pimcore\Model\Element\ElementInterface;
-use Pimcore\Model\DataObject\ClassDefinition\PathFormatterInterface;
 
 class BasilicomPathFormatter implements PathFormatterInterface
 {
@@ -24,68 +28,63 @@ class BasilicomPathFormatter implements PathFormatterInterface
         bool $enableAssetPreview,
         array $patternConfiguration
     ) {
-        $this->pimcoreAdapter = $pimcoreAdapter;
-        $this->enableAssetPreview = $enableAssetPreview;
+        $this->pimcoreAdapter       = $pimcoreAdapter;
+        $this->enableAssetPreview   = $enableAssetPreview;
         $this->patternConfiguration = $patternConfiguration;
-        $this->enableInheritance = $enableInheritance;
+        $this->enableInheritance    = $enableInheritance;
     }
 
-    /**
-     * @param array $result containing the nice path info. Modify it or leave it as it is. Pass it out afterwards!
-     * @param ElementInterface $source the source object
-     * @param array $targets list of nodes describing the target elements
-     * @param array $params optional parameters. may contain additional context information in the future. to be defined.
-     *
-     * @return array list of display names.
-     */
     public function formatPath(array $result, ElementInterface $source, array $targets, array $params): array
     {
-        if (!empty($this->patternConfiguration)) {
-            foreach ($targets as $key => $item) {
-                if ($item['type'] === 'object') {
-                    $targetElement = $this->pimcoreAdapter->getConcreteById($item['id']);
-                } elseif ($item['type'] === 'asset') {
-                    $targetElement = $this->pimcoreAdapter->getAssetById($item['id']);
-                } elseif ($item['type'] === 'document') {
-                    $targetElement = $this->pimcoreAdapter->getDocumentById($item['id']);
+        if (empty($this->patternConfiguration)) {
+            return empty($result) ? [null] : $result;
+        }
+
+        foreach ($targets as $key => $item) {
+            $targetElement = $this->getTargetElement($item);
+            if (!$targetElement) {
+                continue;
+            }
+
+            foreach (array_reverse($this->patternConfiguration) as $patternKey => $patternConfig) {
+                if (strrpos($patternKey, '::') !== false) {
+                    $formattedPath = $this->getFormattedPathWithContext(
+                        $patternKey,
+                        $patternConfig[ConfigDefinition::PATTERN_OVERWRITES],
+                        $params['context'],
+                        $source,
+                        $targetElement
+                    );
                 } else {
-                    continue;
+                    $formattedPath = $this->getFormattedPath(
+                        $patternKey,
+                        $patternConfig[ConfigDefinition::PATTERN],
+                        $targetElement
+                    );
                 }
 
-                if (!$targetElement) {
-                    continue;
-                }
-
-                foreach (array_reverse($this->patternConfiguration) as $patternKey => $patternConfig) {
-                    if (strrpos($patternKey, '::') !== false) {
-                        $formattedPath = $this->getFormattedPathWithContext(
-                            $patternKey,
-                            $patternConfig[ConfigDefinition::PATTERN_OVERWRITES],
-                            $params['context'],
-                            $source,
-                            $targetElement
-                        );
-                    } else {
-                        $formattedPath = $this->getFormattedPath(
-                            $patternKey,
-                            $patternConfig[ConfigDefinition::PATTERN],
-                            $targetElement
-                        );
-                    }
-
-                    if (!empty($formattedPath)) {
-                        $result[$key] = $formattedPath;
-                        break;
-                    }
+                if (!empty($formattedPath)) {
+                    $result[$key] = $formattedPath;
+                    break;
                 }
             }
         }
 
-        if (empty($result)) {
-            $result[0] = null;
+        return empty($result) ? [null] : $result;
+    }
+
+    private function getTargetElement(array $item): DataObject|Asset|Document|null
+    {
+        $targetElement = null;
+        if ($item['type'] === 'object') {
+            $targetElement = $this->pimcoreAdapter->getConcreteById($item['id']);
+        } elseif ($item['type'] === 'asset') {
+            $targetElement = $this->pimcoreAdapter->getAssetById($item['id']);
+        } elseif ($item['type'] === 'document') {
+            $targetElement = $this->pimcoreAdapter->getDocumentById($item['id']);
         }
 
-        return $result;
+        return $targetElement;
     }
 
     private function getFormattedPathWithContext(
@@ -126,29 +125,7 @@ class BasilicomPathFormatter implements PathFormatterInterface
             Concrete::setGetInheritedValues(true);
         }
 
-        $formattedPath = $pattern;
-        if ($targetElement instanceof Asset\Image && $this->enableAssetPreview) {
-            $formattedPath = '<img src="' . $targetElement->getFullPath() . '" style="height: 18px; margin-right: 5px;" /> ' . $formattedPath;
-        }
-
-        $propertyList = $this->getPropertyListFromPattern($pattern);
-
-        foreach ($propertyList as $property) {
-            $propertyGetter = 'get' . ucfirst(trim($property));
-            if (method_exists($targetElement, $propertyGetter)) {
-                $propertyValue = call_user_func([$targetElement, $propertyGetter]);
-                if ($propertyValue instanceof Asset\Image) {
-                    $imagePath = $propertyValue->getFullPath();
-                    $replacement = $this->enableAssetPreview
-                        ? '<img src="' . $imagePath . '" style="height: 18px; margin-right: 5px;" />'
-                        : $imagePath;
-                } else {
-                    $replacement = $propertyValue;
-                }
-
-                $formattedPath = str_replace('{' . $property . '}', $replacement, $formattedPath);
-            }
-        }
+        $formattedPath = $this->format($pattern, $targetElement);
 
         if ($this->enableInheritance) {
             Concrete::setGetInheritedValues($wasInheritanceEnabled);
@@ -157,11 +134,61 @@ class BasilicomPathFormatter implements PathFormatterInterface
         return $formattedPath;
     }
 
+    private function format(string $pattern, AbstractElement $targetElement): string
+    {
+        $formattedPath = $pattern;
+        if ($targetElement instanceof Asset\Image && $this->enableAssetPreview) {
+            $formattedPath = '<img src="' . $targetElement->getFullPath() . '" style="height: 18px; margin-right: 5px;" /> ' . $formattedPath;
+        }
+
+        $propertyList = $this->getPropertyListFromPattern($pattern);
+        foreach ($propertyList as $property) {
+            $propertyValue = $this->resolvePropertyValue($targetElement, $property);
+            $replacement   = '';
+
+            if ($propertyValue !== null) {
+                if ($propertyValue instanceof Asset\Image) {
+                    $imagePath   = $propertyValue->getFullPath();
+                    $replacement = $this->enableAssetPreview
+                        ? '<img src="' . $imagePath . '" style="height: 18px; margin-right: 5px;" />'
+                        : $imagePath;
+                } else {
+                    $replacement = (string)$propertyValue;
+                }
+            }
+
+            $formattedPath = str_replace('{' . $property . '}', $replacement, $formattedPath);
+        }
+
+        return $formattedPath;
+    }
+
+    private function resolvePropertyValue(?object $element, string $propertyPath): mixed
+    {
+        $properties   = explode('.', $propertyPath);
+        $currentValue = $element;
+
+        foreach ($properties as $property) {
+            if (!is_object($currentValue)) {
+                return null;
+            }
+
+            $getter = 'get' . ucfirst(trim($property));
+            if (method_exists($currentValue, $getter)) {
+                $currentValue = call_user_func([$currentValue, $getter]);
+            } else {
+                return null;
+            }
+        }
+
+        return $currentValue;
+    }
+
     private function getPropertyListFromPattern(string $pattern): array
     {
         $matches = [];
         preg_match_all('~{(.*?)}~', $pattern, $matches);
 
-        return !empty($matches) ? $matches[1] : [];
+        return $matches[1];
     }
 }
