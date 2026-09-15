@@ -1,6 +1,6 @@
 {
   "name": "basilicom/pimcore-path-formatter-bundle",
-  "license": "GPL-3.0-or-later",
+  "license": "MIT",
   "type": "pimcore-bundle",
   "description": "This bundle provides path formatter pattern configuration for Pimcore DataObjects in multi-relation.",
   "keywords": [

@@ -143,5 +143,5 @@ To apply the formatter to a field:
 -------
 
 **Author:** Alexander Heidrich (Basilicom GmbH)  
-**License:** GPL v3
+**License:** MIT — see [LICENSE](LICENSE)
 
