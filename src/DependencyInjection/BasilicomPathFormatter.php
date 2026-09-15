@@ -36,10 +36,6 @@ class BasilicomPathFormatter implements PathFormatterInterface
 
     public function formatPath(array $result, ElementInterface $source, array $targets, array $params): array
     {
-        if (empty($this->patternConfiguration)) {
-            return empty($result) ? [null] : $result;
-        }
-
         foreach ($targets as $key => $item) {
             $targetElement = $this->getTargetElement($item);
             if (!$targetElement) {
@@ -68,6 +64,9 @@ class BasilicomPathFormatter implements PathFormatterInterface
                     break;
                 }
             }
+
+            // Pimcore Studio rejects null entries, so an unmatched target keeps its own path.
+            $result[$key] ??= $targetElement->getFullPath();
         }
 
         return empty($result) ? [null] : $result;
