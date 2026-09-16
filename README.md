@@ -31,11 +31,15 @@ While the product will be formatted like `Sneakers 19.99EUR` in most relation-fi
 
 ## Version information
 
-| Bundle Version | PHP  | Pimcore |
-|----------------|------|---------|
-| ^1.0           | ^7.3 | ^6.0    |
-| ^2.0           | ^8.0 | ^10.0   |
-| ^3.0           | ^8.1 | ^11.0   |
+| Bundle Version | PHP           | Pimcore        |
+|----------------|---------------|----------------|
+| ^1.0           | ^7.3          | ^6.0           |
+| ^2.0           | ^8.0          | ^10.0          |
+| ^3.0           | ^8.1          | ^11.0          |
+| ^4.0           | ^8.1 / ^8.3   | ^11.0 \|\| ^12.0 |
+
+Works with the classic admin UI as well as with Pimcore Studio (via `pimcore/studio-backend-bundle`).
+Pimcore 12 itself requires PHP 8.3 or 8.4.
 
 ## Installation
 

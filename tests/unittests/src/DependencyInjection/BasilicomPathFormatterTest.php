@@ -68,7 +68,7 @@ class BasilicomPathFormatterTest extends TestCase
                 $rawPaths,
                 $expectedResult = ['/dataObjects/product - 10€'],
             ],
-            'config for non-existing class' => [
+            'config for non-existing class falls back to the element path' => [
                 $productMock,
                 $patternConfig = [
                     'Pimcore\Model\DataObject\Concreteeee' => [
@@ -76,7 +76,13 @@ class BasilicomPathFormatterTest extends TestCase
                     ],
                 ],
                 $rawPaths,
-                $expectedResult = [null],
+                $expectedResult = ['/dataObjects/product'],
+            ],
+            'no pattern configured falls back to the element path' => [
+                $productMock,
+                $patternConfig = [],
+                $rawPaths,
+                $expectedResult = ['/dataObjects/product'],
             ],
             'use first true class check' => [
                 $productMock,
