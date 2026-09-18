@@ -6,5 +6,11 @@ services:
 
   Basilicom\PathFormatterBundle\DependencyInjection\PimcoreAdapter:
 
+  Basilicom\PathFormatterBundle\Formatter\ExpressionFunctions:
+
+  Basilicom\PathFormatterBundle\Formatter\PatternRenderer:
+
+  Basilicom\PathFormatterBundle\Command\DebugPathFormatterCommand:
+
   Basilicom\PathFormatterBundle\DependencyInjection\BasilicomPathFormatter:
     public: true

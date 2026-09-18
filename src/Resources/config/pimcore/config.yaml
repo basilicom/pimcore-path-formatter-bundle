@@ -1,4 +1,4 @@
 basilicom_path_formatter:
   enable_inheritance: true
   enable_asset_preview: true
-  pattern:
+  enable_cache: true
