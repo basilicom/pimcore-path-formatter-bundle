@@ -41,6 +41,23 @@ While the product will be formatted like `Sneakers 19.99EUR` in most relation-fi
 Works with the classic admin UI as well as with Pimcore Studio (via `pimcore/studio-backend-bundle`).
 Pimcore 12 itself requires PHP 8.3 or 8.4.
 
+### Upgrading from 3.x
+
+Configuration files keep working, but some behaviour changed:
+
+- **Pattern precedence.** Previously the *last* matching pattern in your YAML won. Now a
+  contextual overwrite always beats a global pattern, and among global patterns the most
+  specific class wins. Configurations that relied on file order may resolve differently.
+- **Invalid configuration now fails the build.** A `Class::field` key without
+  `patternOverwrites`, a class key without a `pattern`, and broken `{{ … }}` expressions raise
+  an exception when the container is built instead of at render time.
+- **Values are HTML-escaped.** If you deliberately produced markup through a property value,
+  it now shows up as text. Markup belongs in the pattern.
+- **`enable_inheritance: false` now actually disables inheritance.** It was a no-op before.
+- **Asset previews render a thumbnail** instead of the original image.
+- **`[[` and `]]` became syntax** for optional parts. Single brackets are unaffected, so
+  patterns like `"[{countryIso}] {name}"` keep working.
+
 ## Installation
 
 1. Install the bundle using composer:
