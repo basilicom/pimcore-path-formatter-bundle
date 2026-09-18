@@ -1,0 +1,11 @@
+* text=auto
+
+# Everything a consuming project does not need is kept out of the dist package.
+/.gitattributes         export-ignore
+/.gitignore             export-ignore
+/.php-cs-fixer.dist.php export-ignore
+/AGENTS.md              export-ignore
+/Makefile               export-ignore
+/phpstan-bootstrap.php  export-ignore
+/phpstan.neon.dist      export-ignore
+/tests                  export-ignore

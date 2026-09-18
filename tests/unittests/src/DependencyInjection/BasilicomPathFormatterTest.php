@@ -4,201 +4,308 @@ declare(strict_types=1);
 
 namespace Basilicom\PathFormatterBundle\DependencyInjection;
 
-use PHPUnit\Framework\Attributes\DataProvider;
+use Basilicom\PathFormatterBundle\Formatter\ExpressionFunctions;
+use Basilicom\PathFormatterBundle\Formatter\PatternRenderer;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use Pimcore\Model\Asset\Image;
-use Pimcore\Model\DataObject;
+use Pimcore\Localization\LocaleServiceInterface;
+use Pimcore\Model\DataObject\Concrete;
 use Pimcore\Model\DataObject\Product;
 use Pimcore\Model\DataObject\ProductList;
 use Pimcore\Model\Element\ElementInterface;
+use Psr\Log\NullLogger;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class BasilicomPathFormatterTest extends TestCase
 {
-    /**  */
-    public static function formatPathDataProvider(): array
-    {
-        $assetMock = \Mockery::mock('overload:' . Image::class);
-        $assetMock->shouldReceive('getFullPath')->andReturn('/images/some-file.png');
-
-        $parentMock = new DataObject\Folder();
-        $parentMock->setKey('root');
-
-        $productMock = new Product();
-        $productMock->setKey('product');
-        $productMock->setPath('/dataObjects/');
-        $productMock->setImage($assetMock);
-        $productMock->setParent($parentMock);
-
-        $rawPaths = [
-            [
-                'id'   => 1,
-                'type' => 'object',
-            ],
-        ];
-
-        return [
-            'only class property' => [
-                $productMock,
-                $patternConfig = [
-                    'Pimcore\Model\DataObject\Concrete' => [
-                        'pattern' => '{price}{unit}',
-                    ],
-                ],
-                $rawPaths,
-                $expectedResult = ['10€'],
-            ],
-            'nested properties' => [
-                $productMock,
-                $patternConfig = [
-                    'Pimcore\Model\DataObject\Concrete' => [
-                        'pattern' => '{key} belongs to {parent.key}',
-                    ],
-                ],
-                $rawPaths,
-                $expectedResult = ['product belongs to root'],
-            ],
-            'pimcore concrete properties' => [
-                $productMock,
-                $patternConfig = [
-                    'Pimcore\Model\DataObject\Concrete' => [
-                        'pattern' => '{fullpath} - {price}{unit}',
-                    ],
-                ],
-                $rawPaths,
-                $expectedResult = ['/dataObjects/product - 10€'],
-            ],
-            'config for non-existing class falls back to the element path' => [
-                $productMock,
-                $patternConfig = [
-                    'Pimcore\Model\DataObject\Concreteeee' => [
-                        'pattern' => '{fullpath} - {price}{unit}',
-                    ],
-                ],
-                $rawPaths,
-                $expectedResult = ['/dataObjects/product'],
-            ],
-            'no pattern configured falls back to the element path' => [
-                $productMock,
-                $patternConfig = [],
-                $rawPaths,
-                $expectedResult = ['/dataObjects/product'],
-            ],
-            'use first true class check' => [
-                $productMock,
-                $patternConfig = [
-                    'Pimcore\Model\DataObject\Concrete' => [
-                        'pattern' => '{price}{unit}',
-                    ],
-                    'Basilicom\PathFormatterBundle\Fixtures\Product' => [
-                        'pattern' => 'Product price: {price}{unit}',
-                    ],
-                ],
-                $rawPaths,
-                $expectedResult = ['10€'],
-            ],
-            'image rendering active' => [
-                $productMock,
-                $patternConfig = [
-                    'Pimcore\Model\DataObject\Concrete' => [
-                        'pattern' => '{image} {price}{unit}',
-                    ],
-                ],
-                $rawPaths,
-                $expectedResult               = ['<img src="/images/some-file.png" style="height: 18px; margin-right: 5px;" /> 10€'],
-                $imagePreviewRenderingEnabled = true,
-            ],
-            'image rendering inactive' => [
-                $productMock,
-                $patternConfig = [
-                    'Pimcore\Model\DataObject\Concrete' => [
-                        'pattern' => '{image} {price}{unit}',
-                    ],
-                ],
-                $rawPaths,
-                $expectedResult               = ['/images/some-file.png 10€'],
-                $imagePreviewRenderingEnabled = false,
-            ],
-        ];
-    }
+    private const TARGET = [['id' => 1, 'type' => 'object']];
 
     #[Test]
-    #[DataProvider('formatPathDataProvider')]
-    public function formatPath(
-        Product $productMock,
-        array $patternConfig,
-        array $rawPaths,
-        array $expectedResult,
-        bool $imagePreviewRenderingEnabled = false,
-    ): void {
+    public function formatPath_appliesTheConfiguredPattern(): void
+    {
         // prepare
-        $sourceMock = $this->createMock(ElementInterface::class);
-
-        $pimcoreAdapterMock = $this->createMock(PimcoreAdapter::class);
-        $pimcoreAdapterMock->method('getConcreteById')->willReturn($productMock);
-
-        $classUnderTest = new BasilicomPathFormatter(
-            $pimcoreAdapterMock,
-            true,
-            $imagePreviewRenderingEnabled,
-            $patternConfig
-        );
+        $formatter = $this->createFormatter(['Pimcore\Model\DataObject\Product' => ['pattern' => '{key} {price}{unit}']]);
 
         // test
-        $result = $classUnderTest->formatPath([], $sourceMock, $rawPaths, []);
+        $result = $formatter->formatPath([], $this->createSource(), self::TARGET, []);
 
         // verify
-        $this->assertEquals($expectedResult, $result);
+        $this->assertSame(['sneakers 10€'], $result);
     }
 
     #[Test]
-    public function formatPath_patternOverwrites(): void
+    public function formatPath_fallsBackToTheElementPathWithoutAMatchingPattern(): void
     {
         // prepare
-        $rawPaths = [
-            [
-                'id'   => 1,
-                'type' => 'object',
-            ],
-        ];
+        $formatter = $this->createFormatter(['Pimcore\Model\DataObject\DoesNotExist' => ['pattern' => '{key}']]);
 
-        $params = [
-            'context' => [
-                'containerType' => 'object',
-                'fieldname'     => 'countryRelations',
-                'objectId'      => '1',
-            ],
-        ];
-        $productMock    = new Product();
-        $expectedResult = ['[de] Product: Sneakers'];
+        // test
+        $result = $formatter->formatPath([], $this->createSource(), self::TARGET, []);
 
-        $sourceMock = $this->createMock(ProductList::class);
+        // verify
+        $this->assertSame(['/dataObjects/sneakers'], $result);
+    }
 
-        $patternConfig = [
-            'Pimcore\Model\DataObject\Product' => [
-                ConfigDefinition::PATTERN => 'Product: {name}',
-            ],
+    #[Test]
+    public function formatPath_fallsBackToTheElementPathWhenThePatternResolvesToNothing(): void
+    {
+        // prepare
+        $formatter = $this->createFormatter(['Pimcore\Model\DataObject\Product' => ['pattern' => '{emptyValue}']]);
+
+        // test
+        $result = $formatter->formatPath([], $this->createSource(), self::TARGET, []);
+
+        // verify
+        $this->assertSame(['/dataObjects/sneakers'], $result);
+    }
+
+    #[Test]
+    public function formatPath_prefersTheMostSpecificClass(): void
+    {
+        // prepare: the less specific class is configured last on purpose
+        $formatter = $this->createFormatter([
+            'Pimcore\Model\DataObject\Product'  => ['pattern' => 'specific {key}'],
+            'Pimcore\Model\DataObject\Concrete' => ['pattern' => 'generic {key}'],
+        ]);
+
+        // test
+        $result = $formatter->formatPath([], $this->createSource(), self::TARGET, []);
+
+        // verify
+        $this->assertSame(['specific sneakers'], $result);
+    }
+
+    #[Test]
+    public function formatPath_prefersTheFieldContextOverTheGlobalPattern(): void
+    {
+        // prepare: the global pattern is configured last on purpose
+        $formatter = $this->createFormatter([
             'Pimcore\Model\DataObject\ProductList::countryRelations' => [
-                ConfigDefinition::PATTERN_OVERWRITES => [
-                    'Pimcore\Model\DataObject\Product' => '[{countryIso}] Product: {name}',
-                ],
+                ConfigDefinition::PATTERN_OVERWRITES => ['Pimcore\Model\DataObject\Product' => '[{countryIso}] {key}'],
             ],
-        ];
+            'Pimcore\Model\DataObject\Product' => [ConfigDefinition::PATTERN => 'global {key}'],
+        ]);
 
-        $pimcoreAdapterMock = $this->createMock(PimcoreAdapter::class);
-        $pimcoreAdapterMock->method('getConcreteById')->willReturn($productMock);
+        // test
+        $result = $formatter->formatPath(
+            [],
+            $this->createSource(),
+            self::TARGET,
+            ['context' => ['containerType' => 'object', 'fieldname' => 'countryRelations']]
+        );
 
-        $classUnderTest = new BasilicomPathFormatter(
-            $pimcoreAdapterMock,
-            true,
-            false,
-            $patternConfig
+        // verify
+        $this->assertSame(['[de] sneakers'], $result);
+    }
+
+    #[Test]
+    public function formatPath_ignoresTheFieldContextOfAnotherField(): void
+    {
+        // prepare
+        $formatter = $this->createFormatter([
+            'Pimcore\Model\DataObject\Product' => [ConfigDefinition::PATTERN => 'global {key}'],
+            'Pimcore\Model\DataObject\ProductList::countryRelations' => [
+                ConfigDefinition::PATTERN_OVERWRITES => ['Pimcore\Model\DataObject\Product' => '[{countryIso}] {key}'],
+            ],
+        ]);
+
+        // test
+        $result = $formatter->formatPath(
+            [],
+            $this->createSource(),
+            self::TARGET,
+            ['context' => ['containerType' => 'object', 'fieldname' => 'otherField']]
+        );
+
+        // verify
+        $this->assertSame(['global sneakers'], $result);
+    }
+
+    #[Test]
+    public function formatPath_survivesParamsWithoutAContext(): void
+    {
+        // prepare: object grids call the formatter without a context
+        $formatter = $this->createFormatter([
+            'Pimcore\Model\DataObject\ProductList::countryRelations' => [
+                ConfigDefinition::PATTERN_OVERWRITES => ['Pimcore\Model\DataObject\Product' => '{key}'],
+            ],
+        ]);
+
+        // test
+        $result = $formatter->formatPath([], $this->createSource(), self::TARGET, []);
+
+        // verify
+        $this->assertSame(['/dataObjects/sneakers'], $result);
+    }
+
+    #[Test]
+    public function formatPath_usesTheDefaultPatternAsLastResort(): void
+    {
+        // prepare
+        $formatter = $this->createFormatter([], defaultPattern: 'fallback {key}');
+
+        // test
+        $result = $formatter->formatPath([], $this->createSource(), self::TARGET, []);
+
+        // verify
+        $this->assertSame(['fallback sneakers'], $result);
+    }
+
+    #[Test]
+    public function formatPath_skipsExcludedContainerTypes(): void
+    {
+        // prepare
+        $formatter = $this->createFormatter(
+            ['Pimcore\Model\DataObject\Product' => ['pattern' => '{key}']],
+            excludeContainerTypes: ['fieldcollection']
         );
 
         // test
-        $result = $classUnderTest->formatPath([], $sourceMock, $rawPaths, $params);
+        $result = $formatter->formatPath(
+            [],
+            $this->createSource(),
+            [['id' => 1, 'type' => 'object', 'fullPath' => '/raw/path']],
+            ['context' => ['containerType' => 'fieldcollection', 'fieldname' => 'relation']]
+        );
+
+        // verify: the payload path is returned without loading or formatting the element
+        $this->assertSame(['/raw/path'], $result);
+    }
+
+    #[Test]
+    public function formatPath_keepsTheOwnPathOfAnUnresolvableTarget(): void
+    {
+        // prepare: Studio's FormatedPath DTO would reject a null here
+        $formatter = $this->createFormatter(
+            ['Pimcore\Model\DataObject\Product' => ['pattern' => '{key}']],
+            targetExists: false
+        );
+
+        // test
+        $result = $formatter->formatPath(
+            [],
+            $this->createSource(),
+            [['id' => 999, 'type' => 'object', 'fullPath' => '/deleted/object']],
+            []
+        );
 
         // verify
-        $this->assertEquals($expectedResult, $result);
+        $this->assertSame(['/deleted/object'], $result);
+    }
+
+    #[Test]
+    public function formatPath_returnsNoEntryForEmptyTargets(): void
+    {
+        // test
+        $result = $this->createFormatter([])->formatPath([], $this->createSource(), [], []);
+
+        // verify
+        $this->assertSame([], $result);
+    }
+
+    #[Test]
+    public function formatPath_keepsTheTargetKeysOfTheRequest(): void
+    {
+        // prepare: Studio keys its targets by "object_<id>"
+        $formatter = $this->createFormatter(['Pimcore\Model\DataObject\Product' => ['pattern' => '{key}']]);
+
+        // test
+        $result = $formatter->formatPath([], $this->createSource(), ['object_1' => self::TARGET[0]], []);
+
+        // verify
+        $this->assertSame(['object_1' => 'sneakers'], $result);
+    }
+
+    #[Test]
+    public function formatPath_restoresTheGlobalInheritanceState(): void
+    {
+        // prepare
+        Concrete::setGetInheritedValues(true);
+        $formatter = $this->createFormatter(
+            ['Pimcore\Model\DataObject\Product' => ['pattern' => '{key}']],
+            enableInheritance: false
+        );
+
+        // test
+        $formatter->formatPath([], $this->createSource(), self::TARGET, []);
+
+        // verify
+        $this->assertTrue(Concrete::getGetInheritedValues());
+
+        Concrete::setGetInheritedValues(false);
+    }
+
+    #[Test]
+    public function explain_reportsThePatternAndItsPlaceholders(): void
+    {
+        // prepare
+        $formatter = $this->createFormatter(['Pimcore\Model\DataObject\Product' => ['pattern' => '{key} {emptyValue}']]);
+
+        // test
+        $explanation = $formatter->explain($this->createProduct(), $this->createSource(), []);
+
+        // verify
+        $this->assertSame('{key} {emptyValue}', $explanation['pattern']);
+        $this->assertSame('sneakers ', $explanation['value']);
+        $this->assertSame(['{key}' => 'sneakers', '{emptyValue}' => ''], $explanation['trace']);
+    }
+
+    #[Test]
+    public function explain_reportsNoPatternWhenNothingMatches(): void
+    {
+        // test
+        $explanation = $this->createFormatter([])->explain($this->createProduct(), $this->createSource(), []);
+
+        // verify
+        $this->assertNull($explanation['pattern']);
+        $this->assertNull($explanation['value']);
+    }
+
+    private function createFormatter(
+        array $patternConfiguration,
+        bool $targetExists = true,
+        bool $enableInheritance = true,
+        ?string $defaultPattern = null,
+        array $excludeContainerTypes = [],
+    ): BasilicomPathFormatter {
+        $localeService = $this->createMock(LocaleServiceInterface::class);
+        $localeService->method('getLocale')->willReturn('de');
+
+        $translator = $this->createMock(TranslatorInterface::class);
+
+        $pimcoreAdapter = $this->createMock(PimcoreAdapter::class);
+        $pimcoreAdapter->method('getConcreteById')->willReturn($targetExists ? $this->createProduct() : null);
+
+        return new BasilicomPathFormatter(
+            $pimcoreAdapter,
+            new PatternRenderer(
+                new ExpressionFunctions($localeService, $translator),
+                $localeService,
+                $translator,
+                new NullLogger(),
+                false
+            ),
+            $localeService,
+            $enableInheritance,
+            false,
+            $defaultPattern,
+            $excludeContainerTypes,
+            $patternConfiguration
+        );
+    }
+
+    private function createProduct(): Product
+    {
+        $product = new Product();
+        $product->setId(1);
+        $product->setKey('sneakers');
+        $product->setPath('/dataObjects/');
+
+        return $product;
+    }
+
+    private function createSource(): ElementInterface
+    {
+        return $this->createMock(ProductList::class);
     }
 }

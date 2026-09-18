@@ -2,192 +2,244 @@
 
 declare(strict_types=1);
 
+/**
+ * This source file is available under the terms of the MIT License.
+ * Full copyright and license information is available in
+ * LICENSE which is distributed with this source code.
+ *
+ * @copyright Copyright (c) Basilicom GmbH (https://basilicom.de)
+ * @license   MIT
+ */
+
 namespace Basilicom\PathFormatterBundle\DependencyInjection;
 
-use Pimcore\Model\Asset;
-use Pimcore\Model\DataObject;
+use Basilicom\PathFormatterBundle\Formatter\PatternRenderer;
+use Basilicom\PathFormatterBundle\Formatter\RenderResult;
+use Pimcore\Localization\LocaleServiceInterface;
 use Pimcore\Model\DataObject\ClassDefinition\PathFormatterInterface;
 use Pimcore\Model\DataObject\Concrete;
-use Pimcore\Model\Document;
-use Pimcore\Model\Element\AbstractElement;
 use Pimcore\Model\Element\ElementInterface;
 
 class BasilicomPathFormatter implements PathFormatterInterface
 {
-    private PimcoreAdapter $pimcoreAdapter;
+    private const CACHE_KEY_PREFIX = 'basilicom_path_formatter_';
 
-    private bool $enableAssetPreview;
+    /** @var array<string, string> */
+    private array $globalPatterns = [];
 
-    private array $patternConfiguration;
+    /** @var array<string, array<string, string>> */
+    private array $contextPatterns = [];
 
-    private bool $enableInheritance;
+    /** @var array<string, string> */
+    private array $memoized = [];
 
+    /** @param string[] $excludeContainerTypes */
     public function __construct(
-        PimcoreAdapter $pimcoreAdapter,
-        bool $enableInheritance,
-        bool $enableAssetPreview,
-        array $patternConfiguration
+        private readonly PimcoreAdapter $pimcoreAdapter,
+        private readonly PatternRenderer $renderer,
+        private readonly LocaleServiceInterface $localeService,
+        private readonly bool $enableInheritance,
+        private readonly bool $enableCache,
+        private readonly ?string $defaultPattern,
+        private readonly array $excludeContainerTypes,
+        array $patternConfiguration,
     ) {
-        $this->pimcoreAdapter       = $pimcoreAdapter;
-        $this->enableAssetPreview   = $enableAssetPreview;
-        $this->patternConfiguration = $patternConfiguration;
-        $this->enableInheritance    = $enableInheritance;
+        // Reversed once so that later config entries win ties, as in previous versions.
+        foreach (array_reverse($patternConfiguration, true) as $key => $config) {
+            if (str_contains($key, '::')) {
+                $this->contextPatterns[$key] = array_reverse($config[ConfigDefinition::PATTERN_OVERWRITES] ?? [], true);
+            } elseif (!empty($config[ConfigDefinition::PATTERN])) {
+                $this->globalPatterns[$key] = $config[ConfigDefinition::PATTERN];
+            }
+        }
     }
 
     public function formatPath(array $result, ElementInterface $source, array $targets, array $params): array
     {
+        $context = is_array($params['context'] ?? null) ? $params['context'] : [];
+
+        if (in_array($context['containerType'] ?? null, $this->excludeContainerTypes, true)) {
+            return $this->fallbackForAll($result, $targets);
+        }
+
+        $previousInheritance = Concrete::getGetInheritedValues();
+        Concrete::setGetInheritedValues($this->enableInheritance);
+
+        try {
+            foreach ($targets as $key => $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+
+                $target    = $this->getTargetElement($item);
+                $pattern   = $target === null ? null : $this->resolvePattern($target, $source, $context);
+                $formatted = $pattern === null ? null : $this->format($pattern, $target);
+
+                // A pattern that resolves to nothing at all is less useful than the plain path.
+                $formatted = $formatted === '' ? null : $formatted;
+
+                // Studio's FormatedPath DTO rejects null, so every target keeps at least its own path.
+                $result[$key] = $formatted
+                    ?? ($result[$key] ?? null)
+                    ?? $target?->getFullPath()
+                    ?? $this->rawPath($item);
+            }
+        } finally {
+            Concrete::setGetInheritedValues($previousInheritance);
+        }
+
+        return $result;
+    }
+
+    /** @return array{pattern: ?string, value: ?string, trace: array<string, string>, tags: string[]} */
+    public function explain(ElementInterface $target, ElementInterface $source, array $context): array
+    {
+        $pattern = $this->resolvePattern($target, $source, $context);
+        if ($pattern === null) {
+            return ['pattern' => null, 'value' => null, 'trace' => [], 'tags' => []];
+        }
+
+        $previousInheritance = Concrete::getGetInheritedValues();
+        Concrete::setGetInheritedValues($this->enableInheritance);
+
+        try {
+            $rendered = $this->renderer->render($pattern, $target);
+        } finally {
+            Concrete::setGetInheritedValues($previousInheritance);
+        }
+
+        return [
+            'pattern' => $pattern,
+            'value'   => $rendered->value,
+            'trace'   => $rendered->trace,
+            'tags'    => $this->collectTags($rendered, $target),
+        ];
+    }
+
+    /** @param array<array-key, mixed> $targets */
+    private function fallbackForAll(array $result, array $targets): array
+    {
         foreach ($targets as $key => $item) {
-            $targetElement = $this->getTargetElement($item);
-            if (!$targetElement) {
+            if (is_array($item)) {
+                $result[$key] ??= $this->rawPath($item);
+            }
+        }
+
+        return $result;
+    }
+
+    /** @param array<string, mixed> $item */
+    private function rawPath(array $item): string
+    {
+        return (string)($item['path'] ?? $item['fullPath'] ?? '');
+    }
+
+    /** @param array<string, mixed> $item */
+    private function getTargetElement(array $item): ?ElementInterface
+    {
+        $id = (int)($item['id'] ?? 0);
+        if ($id <= 0) {
+            return null;
+        }
+
+        return match ($item['type'] ?? null) {
+            'object'   => $this->pimcoreAdapter->getConcreteById($id),
+            'asset'    => $this->pimcoreAdapter->getAssetById($id),
+            'document' => $this->pimcoreAdapter->getDocumentById($id),
+            default    => null,
+        };
+    }
+
+    /** @param array<string, mixed> $context */
+    private function resolvePattern(ElementInterface $target, ElementInterface $source, array $context): ?string
+    {
+        $fieldName = $context['fieldname'] ?? null;
+
+        if (is_string($fieldName)) {
+            foreach ($this->contextPatterns as $contextKey => $overwrites) {
+                [$contextClass, $contextField] = explode('::', $contextKey, 2);
+
+                if ($contextField === $fieldName && $source instanceof $contextClass) {
+                    $pattern = $this->matchMostSpecific($overwrites, $target);
+                    if ($pattern !== null) {
+                        return $pattern;
+                    }
+                }
+            }
+        }
+
+        return $this->matchMostSpecific($this->globalPatterns, $target) ?? $this->defaultPattern;
+    }
+
+    /** @param array<string, string> $patterns */
+    private function matchMostSpecific(array $patterns, ElementInterface $target): ?string
+    {
+        $bestClass   = null;
+        $bestPattern = null;
+
+        foreach ($patterns as $className => $pattern) {
+            if (!$target instanceof $className) {
                 continue;
             }
 
-            foreach (array_reverse($this->patternConfiguration) as $patternKey => $patternConfig) {
-                if (strrpos($patternKey, '::') !== false) {
-                    $formattedPath = $this->getFormattedPathWithContext(
-                        $patternKey,
-                        $patternConfig[ConfigDefinition::PATTERN_OVERWRITES],
-                        $params['context'],
-                        $source,
-                        $targetElement
-                    );
-                } else {
-                    $formattedPath = $this->getFormattedPath(
-                        $patternKey,
-                        $patternConfig[ConfigDefinition::PATTERN],
-                        $targetElement
-                    );
-                }
-
-                if (!empty($formattedPath)) {
-                    $result[$key] = $formattedPath;
-                    break;
-                }
-            }
-
-            // Pimcore Studio rejects null entries, so an unmatched target keeps its own path.
-            $result[$key] ??= $targetElement->getFullPath();
-        }
-
-        return empty($result) ? [null] : $result;
-    }
-
-    private function getTargetElement(array $item): DataObject|Asset|Document|null
-    {
-        $targetElement = null;
-        if ($item['type'] === 'object') {
-            $targetElement = $this->pimcoreAdapter->getConcreteById($item['id']);
-        } elseif ($item['type'] === 'asset') {
-            $targetElement = $this->pimcoreAdapter->getAssetById($item['id']);
-        } elseif ($item['type'] === 'document') {
-            $targetElement = $this->pimcoreAdapter->getDocumentById($item['id']);
-        }
-
-        return $targetElement;
-    }
-
-    private function getFormattedPathWithContext(
-        string $patternKey,
-        array $patternOverwrites,
-        array $context,
-        ElementInterface $source,
-        ?AbstractElement $targetElement
-    ): string {
-        $formattedPath = '';
-
-        $contextClassName = substr($patternKey, 0, strpos($patternKey, '::'));
-        $contextFieldName = substr($patternKey, strpos($patternKey, '::') + 2);
-
-        if (class_exists($contextClassName)
-            && $source instanceof $contextClassName
-            && $context['fieldname'] === $contextFieldName
-        ) {
-            foreach ($patternOverwrites as $className => $pattern) {
-                if (class_exists($className) && $targetElement instanceof $className) {
-                    $formattedPath = $this->getFormattedPath($className, $pattern, $targetElement);
-                    break;
-                }
+            if ($bestClass === null || is_subclass_of($className, $bestClass)) {
+                $bestClass   = $className;
+                $bestPattern = $pattern;
             }
         }
 
-        return $formattedPath;
+        return $bestPattern;
     }
 
-    private function getFormattedPath(string $className, string $pattern, ?AbstractElement $targetElement): string
+    private function format(string $pattern, ElementInterface $target): string
     {
-        if (empty($pattern) || !class_exists($className) || !($targetElement instanceof $className)) {
-            return '';
+        $cacheKey = $this->getCacheKey($pattern, $target);
+
+        if (isset($this->memoized[$cacheKey])) {
+            return $this->memoized[$cacheKey];
         }
 
-        $wasInheritanceEnabled = Concrete::getGetInheritedValues();
-        if ($this->enableInheritance) {
-            Concrete::setGetInheritedValues(true);
-        }
-
-        $formattedPath = $this->format($pattern, $targetElement);
-
-        if ($this->enableInheritance) {
-            Concrete::setGetInheritedValues($wasInheritanceEnabled);
-        }
-
-        return $formattedPath;
-    }
-
-    private function format(string $pattern, AbstractElement $targetElement): string
-    {
-        $formattedPath = $pattern;
-        if ($targetElement instanceof Asset\Image && $this->enableAssetPreview) {
-            $formattedPath = '<img src="' . $targetElement->getFullPath() . '" style="height: 18px; margin-right: 5px;" /> ' . $formattedPath;
-        }
-
-        $propertyList = $this->getPropertyListFromPattern($pattern);
-        foreach ($propertyList as $property) {
-            $propertyValue = $this->resolvePropertyValue($targetElement, $property);
-            $replacement   = '';
-
-            if ($propertyValue !== null) {
-                if ($propertyValue instanceof Asset\Image) {
-                    $imagePath   = $propertyValue->getFullPath();
-                    $replacement = $this->enableAssetPreview
-                        ? '<img src="' . $imagePath . '" style="height: 18px; margin-right: 5px;" />'
-                        : $imagePath;
-                } else {
-                    $replacement = (string)$propertyValue;
-                }
-            }
-
-            $formattedPath = str_replace('{' . $property . '}', $replacement, $formattedPath);
-        }
-
-        return $formattedPath;
-    }
-
-    private function resolvePropertyValue(?object $element, string $propertyPath): mixed
-    {
-        $properties   = explode('.', $propertyPath);
-        $currentValue = $element;
-
-        foreach ($properties as $property) {
-            if (!is_object($currentValue)) {
-                return null;
-            }
-
-            $getter = 'get' . ucfirst(trim($property));
-            if (method_exists($currentValue, $getter)) {
-                $currentValue = call_user_func([$currentValue, $getter]);
-            } else {
-                return null;
+        if ($this->enableCache) {
+            $cached = $this->pimcoreAdapter->loadFromCache($cacheKey);
+            if (is_string($cached)) {
+                return $this->memoized[$cacheKey] = $cached;
             }
         }
 
-        return $currentValue;
+        $rendered = $this->renderer->render($pattern, $target);
+
+        if ($this->enableCache) {
+            $this->pimcoreAdapter->saveToCache($cacheKey, $rendered->value, $this->collectTags($rendered, $target));
+        }
+
+        return $this->memoized[$cacheKey] = $rendered->value;
     }
 
-    private function getPropertyListFromPattern(string $pattern): array
+    /** @return string[] */
+    private function collectTags(RenderResult $rendered, ElementInterface $target): array
     {
-        $matches = [];
-        preg_match_all('~{(.*?)}~', $pattern, $matches);
+        $tags                         = $rendered->tags;
+        $tags[$target->getCacheTag()] = $target->getCacheTag();
 
-        return $matches[1];
+        // An inherited value belongs to an ancestor, so the whole chain has to invalidate the entry.
+        if ($this->enableInheritance && $target instanceof Concrete) {
+            for ($parent = $target->getParent(); $parent instanceof Concrete; $parent = $parent->getParent()) {
+                $tags[$parent->getCacheTag()] = $parent->getCacheTag();
+            }
+        }
+
+        return array_values($tags);
+    }
+
+    private function getCacheKey(string $pattern, ElementInterface $target): string
+    {
+        return self::CACHE_KEY_PREFIX . sha1(implode('|', [
+            $pattern,
+            $target->getCacheTag(),
+            (string)$target->getModificationDate(),
+            (string)$this->localeService->getLocale(),
+            (string)$this->enableInheritance,
+            $this->renderer->cacheDiscriminator(),
+        ]));
     }
 }

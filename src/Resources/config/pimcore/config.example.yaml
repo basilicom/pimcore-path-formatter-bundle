@@ -1,13 +1,25 @@
 basilicom_path_formatter:
   enable_inheritance: true # whether to also show inherited values, works only for DataObjects
   enable_asset_preview: true
+  enable_cache: true # invalidated when a referenced element is saved
+
+  # used when no pattern below matches the related element
+  default_pattern: "{key}"
+
+  # relation fields inside these containers are not formatted at all
+  exclude_container_types: []
+
   pattern:
-    # this is a global configuration for the pattern of the specific dataObject in a relation field
+    # global pattern for the given class, wherever it appears in a relation field
     Pimcore\Model\DataObject\BasicProduct: "Basic - {name}"
-    Pimcore\Model\DataObject\PremiumProduct: "Premium - {name}"
+
+    # "[[ ]]" wraps an optional part: it disappears when all its placeholders are empty,
+    # "{{ }}" evaluates a Symfony expression
+    Pimcore\Model\DataObject\PremiumProduct: "Premium - {name}[[ ({{ number(element.getPrice(), 2) }} {currency})]]"
+
     Pimcore\Model\DataObject\ProductList: "Product-list with {count} products"
 
-    # this will overwrite the global pattern by wrapping it with a context
+    # overwrites the global pattern for one field of one class
     Pimcore\Model\DataObject\ProductList::countryRelations:
       patternOverwrites:
         Pimcore\Model\DataObject\BasicProduct: "[{countryIso}] Basic - {name}"

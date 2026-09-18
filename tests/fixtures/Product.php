@@ -8,7 +8,7 @@ use Pimcore\Model\Element\AbstractElement;
 class Product extends Concrete
 {
     private Asset\Image $image;
-    protected ?AbstractElement $parent;
+    protected ?AbstractElement $parent = null;
 
     public function setParent($parent): static
     {
@@ -40,6 +40,26 @@ class Product extends Concrete
     public function getUnit(): string
     {
         return '€';
+    }
+
+    public function getBracedName(): string
+    {
+        return '{key} wins';
+    }
+
+    public function getEmptyValue(): ?string
+    {
+        return null;
+    }
+
+    public function getUnsafeName(): string
+    {
+        return '<script>alert(1)</script>';
+    }
+
+    public function getUnstringifiable(): array
+    {
+        return ['no', '__toString'];
     }
 
     public function setImage(Asset\Image $image): void
